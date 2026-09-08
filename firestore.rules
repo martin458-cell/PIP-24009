@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidDni(id) {
+      return id is string && id.size() == 8 && id.matches('^[0-9]+$');
+    }
+
+    function isValidRegistroId(id) {
+      return id is string && id.size() >= 10 && id.size() <= 128;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidDocente(data) {
+      return data.keys().hasAll(['dni', 'apellidosNombres', 'grado', 'seccion', 'correo', 'celular', 'fechaNacimiento', 'especialidad'])
+        && (data.keys().size() == 8 || (
+             data.keys().size() == 11
+             && data.keys().hasAll(['condicion', 'escala', 'jornadaLaboral'])
+             && data.condicion is string && (data.condicion == 'Nombrado' || data.condicion == 'Contratado' || data.condicion == 'Designado' || data.condicion == 'Encargado')
+             && data.escala is string && (data.escala == 'I' || data.escala == 'II' || data.escala == 'III' || data.escala == 'IV' || data.escala == 'V' || data.escala == 'VI' || data.escala == 'VII' || data.escala == 'VIII' || data.escala == 'Sin Escala')
+             && (data.jornadaLaboral is int || data.jornadaLaboral is float) && (data.jornadaLaboral == 30 || data.jornadaLaboral == 40)
+           ))
+        && data.dni is string && data.dni.size() == 8 && data.dni.matches('^[0-9]+$')
+        && data.apellidosNombres is string && data.apellidosNombres.size() >= 5 && data.apellidosNombres.size() <= 120
+        && data.grado is string && data.grado.size() >= 2 && data.grado.size() <= 40
+        && data.seccion is string && data.seccion.size() >= 1 && data.seccion.size() <= 40
+        && data.correo is string && data.correo.size() >= 5 && data.correo.size() <= 100
+        && data.celular is string && data.celular.size() == 9 && data.celular.matches('^9[0-9]+$')
+        && data.fechaNacimiento is string && data.fechaNacimiento.size() == 10
+        && data.especialidad is string && data.especialidad.size() >= 3 && data.especialidad.size() <= 100;
+    }
+
+    function isValidRegistroAip(data) {
+      return data.keys().hasAll(['id', 'docenteDni', 'docenteNombre', 'fecha', 'hora', 'area', 'tema', 'recurso', 'presentoSesion', 'grado', 'seccion', 'estudiantesAsistentes', 'observacion', 'createdAt'])
+        && data.keys().size() == 14
+        && data.id is string && data.id.size() >= 10
+        && data.docenteDni is string && data.docenteDni.size() == 8 && data.docenteDni.matches('^[0-9]+$')
+        && data.docenteNombre is string && data.docenteNombre.size() >= 3 && data.docenteNombre.size() <= 120
+        && data.fecha is string && data.fecha.size() == 10
+        && (data.hora is int || data.hora is float) && data.hora >= 1 && data.hora <= 6
+        && data.area is string && data.area.size() >= 3 && data.area.size() <= 60
+        && data.tema is string && data.tema.size() >= 1 && data.tema.size() <= 300
+        && data.recurso is string && data.recurso.size() >= 0 && data.recurso.size() <= 300
+        && data.presentoSesion is bool
+        && data.grado is string && data.grado.size() >= 1 && data.grado.size() <= 40
+        && data.seccion is string && data.seccion.size() >= 1 && data.seccion.size() <= 40
+        && (data.estudiantesAsistentes is int || data.estudiantesAsistentes is float) && data.estudiantesAsistentes >= 0 && data.estudiantesAsistentes <= 150
+        && data.observacion is string && data.observacion.size() >= 0 && data.observacion.size() <= 1000
+        && data.createdAt is string;
+    }
+
+    match /docentes/{docenteId} {
+      allow read: if true;
+      allow create: if isValidDni(docenteId) && docenteId == incoming().dni && isValidDocente(incoming());
+      allow update: if isValidDni(docenteId) && docenteId == incoming().dni && isValidDocente(incoming());
+      allow delete: if true;
+    }
+
+    match /registros_aip/{registroId} {
+      allow read: if true;
+      allow create: if isValidRegistroId(registroId) && registroId == incoming().id && isValidRegistroAip(incoming());
+      allow update: if isValidRegistroId(registroId) && registroId == incoming().id && isValidRegistroAip(incoming());
+      allow delete: if true;
+    }
+
+    match /fechas_especiales/{fechaId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+  }
+}

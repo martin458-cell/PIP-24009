@@ -1,0 +1,184 @@
+{
+  "entities": {
+    "Docente": {
+      "title": "Docente",
+      "description": "Ficha de datos oficiales del personal docente de la institución I.E.P.M. N° 24009 Túpac Amaru II",
+      "type": "object",
+      "properties": {
+        "dni": {
+          "type": "string",
+          "description": "Número de DNI de 8 dígitos, identificador único"
+        },
+        "apellidosNombres": {
+          "type": "string",
+          "description": "Apellidos y nombres completos separados por coma"
+        },
+        "grado": {
+          "type": "string",
+          "description": "Grado académico asignado"
+        },
+        "seccion": {
+          "type": "string",
+          "description": "Sección o aula física asignada"
+        },
+        "correo": {
+          "type": "string",
+          "description": "Correo electrónico de contacto"
+        },
+        "celular": {
+          "type": "string",
+          "description": "Número de celular de 9 dígitos"
+        },
+        "fechaNacimiento": {
+          "type": "string",
+          "description": "Fecha de nacimiento en formato YYYY-MM-DD"
+        },
+        "especialidad": {
+          "type": "string",
+          "description": "Especialidad pedagógica principal"
+        },
+        "condicion": {
+          "type": "string",
+          "description": "Condición laboral del docente (Nombrado, Contratado, Designado, Encargado)",
+          "enum": ["Nombrado", "Contratado", "Designado", "Encargado"]
+        },
+        "escala": {
+          "type": "string",
+          "description": "Escala Magisterial (I al VIII o Sin Escala)",
+          "enum": ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "Sin Escala"]
+        },
+        "jornadaLaboral": {
+          "type": "number",
+          "description": "Jornada Laboral en horas (30 o 40)"
+        }
+      },
+      "required": ["dni", "apellidosNombres", "grado", "seccion", "correo", "celular", "fechaNacimiento", "especialidad", "condicion", "escala", "jornadaLaboral"]
+    },
+    "RegistroAip": {
+      "title": "RegistroAip",
+      "description": "Registro de ingreso de docentes al Aula de Innovación Pedagógica (AIP)",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identificador único generado por Firestore"
+        },
+        "docenteDni": {
+          "type": "string",
+          "description": "DNI del docente que registra ingreso"
+        },
+        "docenteNombre": {
+          "type": "string",
+          "description": "Nombre completo del docente"
+        },
+        "fecha": {
+          "type": "string",
+          "description": "Fecha en formato YYYY-MM-DD"
+        },
+        "hora": {
+          "type": "number",
+          "description": "Hora pedagógica del 1 al 6"
+        },
+        "area": {
+          "type": "string",
+          "description": "Área de docencia que trabajará"
+        },
+        "tema": {
+          "type": "string",
+          "description": "Tema de la sesión de aprendizaje"
+        },
+        "recurso": {
+          "type": "string",
+          "description": "Recurso que usó (por ejemplo: laptops, proyector)"
+        },
+        "presentoSesion": {
+          "type": "boolean",
+          "description": "Si presentó sesión de aprendizaje o no"
+        },
+        "grado": {
+          "type": "string",
+          "description": "Grado con el que trabaja"
+        },
+        "seccion": {
+          "type": "string",
+          "description": "Sección con la que trabaja"
+        },
+        "estudiantesAsistentes": {
+          "type": "number",
+          "description": "Número de estudiantes asistentes de la sesión"
+        },
+        "observacion": {
+          "type": "string",
+          "description": "Observaciones adicionales"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp de creación"
+        }
+      },
+      "required": ["id", "docenteDni", "docenteNombre", "fecha", "hora", "area", "tema", "recurso", "presentoSesion", "grado", "seccion", "estudiantesAsistentes", "observacion", "createdAt"]
+    },
+    "FechaEspecial": {
+      "title": "FechaEspecial",
+      "description": "Fechas especiales, feriados o jornadas de gestión donde no se realizan actividades en el AIP para justificar la no asistencia del docente",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identificador único de la fecha especial"
+        },
+        "fecha": {
+          "type": "string",
+          "description": "Fecha en formato YYYY-MM-DD"
+        },
+        "titulo": {
+          "type": "string",
+          "description": "Denominación de la fecha especial o motivo"
+        },
+        "tipo": {
+          "type": "string",
+          "description": "Tipo de fecha especial (Feriado, Semana de Gestión, Actividad Institucional, Mantenimiento AIP, etc.)"
+        },
+        "sinActividadAip": {
+          "type": "boolean",
+          "description": "Indica si se suspenden las actividades en el AIP"
+        },
+        "motivoJustificacion": {
+          "type": "string",
+          "description": "Texto oficial de justificación para la no asistencia docente al AIP"
+        },
+        "activo": {
+          "type": "boolean",
+          "description": "Estado activo/inactivo de la fecha especial"
+        },
+        "turno": {
+          "type": "string",
+          "description": "Turno afectado (ambos, mañana, tarde)"
+        },
+        "docentesAfectados": {
+          "type": "string",
+          "description": "Docentes exonerados o justificados"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp de registro"
+        }
+      },
+      "required": ["id", "fecha", "titulo", "tipo", "sinActividadAip", "motivoJustificacion", "activo"]
+    }
+  },
+  "firestore": {
+    "docentes/{docenteId}": {
+      "schema": "Docente",
+      "description": "Colección global de docentes de la IEPM 24009"
+    },
+    "registros_aip/{registroId}": {
+      "schema": "RegistroAip",
+      "description": "Colección global de registros de ingreso al Aula de Innovación Pedagógica (AIP)"
+    },
+    "fechas_especiales/{fechaId}": {
+      "schema": "FechaEspecial",
+      "description": "Colección global de fechas especiales y justificaciones de inasistencia en AIP"
+    }
+  }
+}

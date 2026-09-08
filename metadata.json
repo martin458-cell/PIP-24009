@@ -1,0 +1,6 @@
+{
+  "name": "IEPM N° 24009 Túpac Amaru II",
+  "description": "Portal modular de gestión escolar, control de personal docente y auditoría del Aula de Innovación Pedagógica (AIP) de la IEPM N° 24009 Túpac Amaru II.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
