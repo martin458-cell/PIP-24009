@@ -300,6 +300,8 @@ export interface AuthUser {
 
 export interface SecurityConfig {
   id: string; // 'seguridad'
+  adminUsername: string; // default: "admin"
+  adminPassword: string; // default: "AIP24009"
   institutionalPin: string; // default: "AIP24009"
   whitelistedEmails: string[];
   allowOnlyWhitelistedGoogle: boolean;

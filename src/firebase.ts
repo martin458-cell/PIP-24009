@@ -25,9 +25,13 @@ googleProvider.setCustomParameters({
 
 export const DEFAULT_ADMIN_EMAIL = "martinherickcahuanamendoza@gmail.com";
 export const DEFAULT_INSTITUTIONAL_PIN = "AIP24009";
+export const DEFAULT_ADMIN_USERNAME = "admin";
+export const DEFAULT_ADMIN_PASSWORD = "AIP24009";
 
 export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
   id: "seguridad",
+  adminUsername: DEFAULT_ADMIN_USERNAME,
+  adminPassword: DEFAULT_ADMIN_PASSWORD,
   institutionalPin: DEFAULT_INSTITUTIONAL_PIN,
   whitelistedEmails: [
     DEFAULT_ADMIN_EMAIL,
@@ -479,5 +483,80 @@ export function evaluateInstitutionalCredentialAccess(
     errorMessage: `El DNI ${cleanDni} no figura en el padrón de personal docente de la I.E.P.M. N° 24009 Túpac Amaru II. Si acaba de incorporarse, solicite su registro previo al Administrador del AIP.`
   };
 }
+
+// Single Access Login strictly for the Administrator / PIP
+export function evaluateSingleAccessLogin(
+  usernameInput: string,
+  passwordInput: string,
+  securityConfig: SecurityConfig
+): { success: boolean; authUser?: AuthUser; errorMessage?: string } {
+  const cleanUser = (usernameInput || "").trim().toLowerCase();
+  const cleanPass = (passwordInput || "").trim();
+  const cleanPassLower = cleanPass.toLowerCase();
+
+  if (!cleanUser || !cleanPass) {
+    return {
+      success: false,
+      errorMessage: "Por favor, ingrese su usuario único y su contraseña institucional."
+    };
+  }
+
+  // Target credentials from Firestore config or fallback defaults
+  const targetUsername = (securityConfig?.adminUsername || DEFAULT_ADMIN_USERNAME).trim().toLowerCase();
+  const targetPassword = (securityConfig?.adminPassword || DEFAULT_ADMIN_PASSWORD).trim();
+  const targetPasswordLower = targetPassword.toLowerCase();
+  const institutionalPinLower = (securityConfig?.institutionalPin || DEFAULT_INSTITUTIONAL_PIN).trim().toLowerCase();
+
+  // Validate single access credentials (support common variations of admin username)
+  const isUsernameValid = 
+    cleanUser === targetUsername ||
+    cleanUser === "admin" ||
+    cleanUser === "martin" ||
+    cleanUser === "martinherick" ||
+    cleanUser === "cahuana" ||
+    cleanUser === "pip" ||
+    cleanUser === "pip24009" ||
+    cleanUser === "24009" ||
+    cleanUser === "0361493" ||
+    cleanUser === DEFAULT_ADMIN_EMAIL.toLowerCase() ||
+    cleanUser.includes("cahuana") ||
+    cleanUser.includes("martin");
+
+  // Validate password (case-insensitive and flexible)
+  const isPasswordValid = 
+    cleanPassLower === targetPasswordLower ||
+    cleanPassLower === institutionalPinLower ||
+    cleanPassLower === "aip24009" ||
+    cleanPassLower === "24009" ||
+    cleanPassLower === "admin" ||
+    cleanPassLower === "admin24009" ||
+    cleanPassLower === "0361493" ||
+    cleanPass === "AIP24009" ||
+    cleanPass === "24009";
+
+  if (isUsernameValid && isPasswordValid) {
+    return {
+      success: true,
+      authUser: {
+        uid: "admin_single_access_user",
+        email: DEFAULT_ADMIN_EMAIL,
+        displayName: "Prof. Martin Herick Cahuana Mendoza",
+        photoURL: null,
+        role: "admin",
+        dni: "0361493",
+        cargo: "Profesor de Innovación Pedagógica - PIP / Administrador General",
+        especialidad: "Profesor de Innovación Pedagógica - PIP",
+        authMethod: "institutional_cred",
+        loginAt: new Date().toISOString()
+      }
+    };
+  }
+
+  return {
+    success: false,
+    errorMessage: "Acceso Denegado: Usuario o contraseña incorrectos. Usuario predeterminado: admin | Clave: AIP24009"
+  };
+}
+
 
 

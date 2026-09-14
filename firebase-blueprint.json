@@ -175,6 +175,14 @@
           "type": "string",
           "description": "Identificador de la configuración (seguridad)"
         },
+        "adminUsername": {
+          "type": "string",
+          "description": "Usuario único de acceso administrativo para el PIP"
+        },
+        "adminPassword": {
+          "type": "string",
+          "description": "Contraseña de acceso administrativo para el PIP"
+        },
         "institutionalPin": {
           "type": "string",
           "description": "Clave institucional de acceso AIP"
