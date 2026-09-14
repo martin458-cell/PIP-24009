@@ -280,3 +280,30 @@ export function formatHoraAip(h: number): string {
   return match ? match.label : `${h}° Hora Pedagógica`;
 }
 
+// Security & Authentication Types
+export type UserRole = "admin" | "docente" | "directivo";
+
+export interface AuthUser {
+  uid: string;
+  email: string | null;
+  displayName: string;
+  photoURL?: string | null;
+  role: UserRole;
+  dni?: string;
+  cargo?: string;
+  especialidad?: string;
+  grado?: string;
+  seccion?: string;
+  authMethod: "google" | "institutional_cred";
+  loginAt: string;
+}
+
+export interface SecurityConfig {
+  id: string; // 'seguridad'
+  institutionalPin: string; // default: "AIP24009"
+  whitelistedEmails: string[];
+  allowOnlyWhitelistedGoogle: boolean;
+  adminEmail: string;
+  updatedAt: string;
+}
+

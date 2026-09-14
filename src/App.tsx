@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Docente, RegistroAip, SystemModule, DEFAULT_MODULES, ActiveTabType, FechaEspecial } from "./types";
+import { Docente, RegistroAip, SystemModule, DEFAULT_MODULES, ActiveTabType, FechaEspecial, AuthUser, SecurityConfig } from "./types";
 import { INITIAL_DOCENTES } from "./initialData";
 import { INITIAL_FECHAS_ESPECIALES } from "./initialSpecialDates";
 import { 
@@ -12,7 +12,13 @@ import {
   deleteRegistroAipFromFirebase,
   subscribeFechasEspeciales,
   saveFechaEspecialToFirebase,
-  deleteFechaEspecialFromFirebase
+  deleteFechaEspecialFromFirebase,
+  subscribeSecurityConfig,
+  DEFAULT_SECURITY_CONFIG,
+  signOutFirebase,
+  onAuthStateChanged,
+  auth,
+  evaluateGoogleAuthorization
 } from "./firebase";
 import TopNavbar from "./components/TopNavbar";
 import Sidebar from "./components/Sidebar";
@@ -30,6 +36,8 @@ import AipStats from "./components/AipStats";
 import AipPdfReportModal from "./components/AipPdfReportModal";
 import MonthlyReportModule from "./components/MonthlyReportModule";
 import SpecialDatesCalendar from "./components/SpecialDatesCalendar";
+import LoginScreen from "./components/LoginScreen";
+import SecurityAccessModal from "./components/SecurityAccessModal";
 import { SCHOOL_LOGO_PATH } from "./assets/schoolLogo";
 import { 
   Bell, 
@@ -98,6 +106,20 @@ export default function App() {
     type: "success" | "info" | "error";
   } | null>(null);
 
+  // Authentication & Security State
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
+    try {
+      const saved = localStorage.getItem("iepm_auth_user");
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.warn("Could not parse saved user:", e);
+    }
+    return null;
+  });
+
+  const [securityConfig, setSecurityConfig] = useState<SecurityConfig>(DEFAULT_SECURITY_CONFIG);
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false);
+
   // Custom Confirmation Modal state
   const [confirmConfig, setConfirmConfig] = useState<{
     isOpen: boolean;
@@ -110,6 +132,33 @@ export default function App() {
   // Persistent Hydration with Firebase Real-time Sync
   useEffect(() => {
     testConnection();
+
+    // Subscribe to Security Configuration in Firestore
+    const unsubscribeSecurity = subscribeSecurityConfig((cfg) => {
+      setSecurityConfig(cfg);
+    });
+
+    // Firebase Auth State Listener
+    const unsubscribeAuth = onAuthStateChanged(auth, (fbUser) => {
+      if (fbUser) {
+        const authEval = evaluateGoogleAuthorization(
+          {
+            uid: fbUser.uid,
+            email: fbUser.email,
+            displayName: fbUser.displayName,
+            photoURL: fbUser.photoURL
+          },
+          docentes,
+          securityConfig
+        );
+        if (authEval.isAuthorized && authEval.authUser) {
+          setCurrentUser(authEval.authUser);
+          try {
+            localStorage.setItem("iepm_auth_user", JSON.stringify(authEval.authUser));
+          } catch (e) {}
+        }
+      }
+    });
 
     // Subscribe to teachers changes in Firestore
     const unsubscribeDocentes = subscribeDocentes(async (list) => {
@@ -157,6 +206,8 @@ export default function App() {
     });
 
     return () => {
+      unsubscribeSecurity();
+      unsubscribeAuth();
       unsubscribeDocentes();
       unsubscribeAip();
       unsubscribeFechas();
@@ -321,6 +372,39 @@ export default function App() {
 
   const existingDnis = docentes.map((d) => d.dni);
 
+  // Authentication Handlers
+  const handleLoginSuccess = (user: AuthUser) => {
+    setCurrentUser(user);
+    try {
+      localStorage.setItem("iepm_auth_user", JSON.stringify(user));
+    } catch (e) {}
+    showToast(`Bienvenido(a) al sistema AIP, ${user.displayName}. Acceso autorizado.`, "success");
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOutFirebase();
+    } catch (e) {
+      console.warn("Error signing out:", e);
+    }
+    setCurrentUser(null);
+    try {
+      localStorage.removeItem("iepm_auth_user");
+    } catch (e) {}
+    showToast("Sesión institucional finalizada.", "info");
+  };
+
+  // If user is not authenticated, strictly show Institutional Login Screen
+  if (!currentUser) {
+    return (
+      <LoginScreen
+        docentes={docentes}
+        securityConfig={securityConfig}
+        onLoginSuccess={handleLoginSuccess}
+      />
+    );
+  }
+
   // Current module meta
   const currentModule = modules.find((m) => m.routeTab === activeTab) || modules[0];
 
@@ -366,6 +450,9 @@ export default function App() {
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         isSidebarOpen={isSidebarOpen}
         activeModuleName={currentModule.name}
+        currentUser={currentUser}
+        onLogout={handleLogout}
+        onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
       />
 
       {/* Institutional Sub-Ribbon */}
@@ -403,6 +490,9 @@ export default function App() {
           totalDocentes={docentes.length}
           totalAip={registros.length}
           modules={modules}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+          onOpenSecurityModal={() => setIsSecurityModalOpen(true)}
           onOpenNewDocente={() => {
             setEditingDocente(null);
             setActiveTab("docentes");
@@ -1292,6 +1382,16 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Security & Access Control Modal */}
+      <SecurityAccessModal
+        isOpen={isSecurityModalOpen}
+        onClose={() => setIsSecurityModalOpen(false)}
+        securityConfig={securityConfig}
+        docentes={docentes}
+        currentUser={currentUser}
+        onUpdateSecurityConfig={(updated) => setSecurityConfig(updated)}
+      />
 
     </div>
   );

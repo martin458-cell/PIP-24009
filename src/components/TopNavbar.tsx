@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { School, Search, Clock, Menu, X } from "lucide-react";
+import { School, Search, Clock, Menu, X, ShieldCheck, LogOut, User } from "lucide-react";
 import { SCHOOL_LOGO_PATH } from "../assets/schoolLogo";
+import { AuthUser } from "../types";
 
 interface TopNavbarProps {
   totalDocentes: number;
@@ -9,6 +10,9 @@ interface TopNavbarProps {
   onToggleSidebar: () => void;
   isSidebarOpen: boolean;
   activeModuleName: string;
+  currentUser: AuthUser | null;
+  onLogout: () => void;
+  onOpenSecurityModal: () => void;
 }
 
 export default function TopNavbar({
@@ -17,7 +21,10 @@ export default function TopNavbar({
   onOpenGlobalSearch,
   onToggleSidebar,
   isSidebarOpen,
-  activeModuleName
+  activeModuleName,
+  currentUser,
+  onLogout,
+  onOpenSecurityModal
 }: TopNavbarProps) {
   const [timeString, setTimeString] = useState<string>("");
   const [dateString, setDateString] = useState<string>("");
@@ -91,7 +98,7 @@ export default function TopNavbar({
           </div>
 
           {/* Center: Global Instant Search Trigger */}
-          <div className="hidden md:flex flex-1 max-w-md mx-4">
+          <div className="hidden md:flex flex-1 max-w-xs lg:max-w-sm mx-2">
             <button
               type="button"
               onClick={onOpenGlobalSearch}
@@ -99,7 +106,7 @@ export default function TopNavbar({
             >
               <div className="flex items-center gap-2">
                 <Search className="w-4 h-4 text-slate-400 group-hover:text-[#D92323] transition-colors" />
-                <span className="font-medium text-slate-600">Buscar docente, DNI, área o sesión...</span>
+                <span className="font-medium text-slate-600 truncate">Buscar docente, DNI...</span>
               </div>
               <kbd className="hidden lg:inline-flex items-center gap-0.5 text-[10px] font-mono px-1.5 py-0.5 rounded bg-white border border-slate-300 text-slate-500 shadow-xs">
                 Ctrl+K
@@ -107,20 +114,11 @@ export default function TopNavbar({
             </button>
           </div>
 
-          {/* Right: Live Clock, Sync Badge & Module Switcher */}
-          <div className="flex items-center gap-2.5">
-            {/* Mobile Search Icon */}
-            <button
-              type="button"
-              onClick={onOpenGlobalSearch}
-              className="md:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer"
-              title="Buscar en todo el sistema"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-
+          {/* Right: Live Clock, User Profile, Security & Logout */}
+          <div className="flex items-center gap-2">
+            
             {/* Live System Time */}
-            <div className="hidden sm:flex flex-col items-end text-right px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/70">
+            <div className="hidden xl:flex flex-col items-end text-right px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/70">
               <div className="flex items-center gap-1.5 text-[11px] font-black font-mono text-slate-800">
                 <Clock className="w-3.5 h-3.5 text-[#D92323]" />
                 <span>{timeString || "00:00:00"}</span>
@@ -130,11 +128,65 @@ export default function TopNavbar({
               </span>
             </div>
 
-            {/* Cloud Sync Status */}
-            <div className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold uppercase tracking-wider font-mono">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Firestore Sync</span>
-            </div>
+            {/* Security Config Button */}
+            <button
+              type="button"
+              onClick={onOpenSecurityModal}
+              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer relative group"
+              title="Control de Seguridad y Acceso Institucional"
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span className="sr-only">Seguridad</span>
+            </button>
+
+            {/* Authenticated User Badge */}
+            {currentUser && (
+              <div className="flex items-center gap-2 pl-1 border-l border-slate-200">
+                <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/80 max-w-[160px] sm:max-w-[200px]">
+                  {currentUser.photoURL ? (
+                    <img
+                      src={currentUser.photoURL}
+                      alt={currentUser.displayName}
+                      className="w-7 h-7 rounded-full object-cover border border-slate-300 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-slate-800 text-white text-xs font-black flex items-center justify-center shrink-0">
+                      {currentUser.displayName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="text-left overflow-hidden">
+                    <p className="text-xs font-bold text-slate-900 truncate leading-tight">
+                      {currentUser.displayName}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <span className={`text-[9px] font-bold uppercase tracking-wider font-mono px-1 rounded ${
+                        currentUser.role === "admin" 
+                          ? "bg-red-100 text-red-700" 
+                          : "bg-blue-100 text-blue-700"
+                      }`}>
+                        {currentUser.role === "admin" ? "Admin PIP" : "Docente"}
+                      </span>
+                      {currentUser.dni && (
+                        <span className="text-[9px] text-slate-400 font-mono hidden sm:inline">
+                          DNI {currentUser.dni}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Logout Button */}
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="p-2 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 border border-slate-200 transition-all cursor-pointer"
+                  title="Cerrar Sesión Institucional"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
           </div>
 
         </div>
@@ -142,3 +194,4 @@ export default function TopNavbar({
     </header>
   );
 }
+

@@ -16,9 +16,10 @@ import {
   ExternalLink,
   Plus,
   FileSpreadsheet,
-  Sparkles
+  Sparkles,
+  LogOut
 } from "lucide-react";
-import { SystemModule, ActiveTabType } from "../types";
+import { SystemModule, ActiveTabType, AuthUser } from "../types";
 import { SCHOOL_LOGO_PATH } from "../assets/schoolLogo";
 
 interface SidebarProps {
@@ -36,6 +37,9 @@ interface SidebarProps {
   onOpenNewDocente: () => void;
   onOpenNewAip: () => void;
   onOpenPdfReport: () => void;
+  currentUser?: AuthUser | null;
+  onLogout?: () => void;
+  onOpenSecurityModal?: () => void;
 }
 
 export default function Sidebar({
@@ -52,7 +56,10 @@ export default function Sidebar({
   modules,
   onOpenNewDocente,
   onOpenNewAip,
-  onOpenPdfReport
+  onOpenPdfReport,
+  currentUser,
+  onLogout,
+  onOpenSecurityModal
 }: SidebarProps) {
   // Map icons for dynamic rendering
   const getModuleIcon = (iconName: string, isCurrent: boolean) => {
@@ -321,6 +328,57 @@ export default function Sidebar({
             );
           })}
         </div>
+
+        {/* Authenticated User Session Card */}
+        {currentUser && (
+          <div className="p-3 border-t border-slate-100 bg-slate-50/50 shrink-0">
+            <div className="p-2 rounded-xl bg-white border border-slate-200/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 overflow-hidden">
+                  {currentUser.photoURL ? (
+                    <img
+                      src={currentUser.photoURL}
+                      alt={currentUser.displayName}
+                      className="w-7 h-7 rounded-full object-cover border border-slate-300 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-slate-900 text-white text-[11px] font-black flex items-center justify-center shrink-0">
+                      {currentUser.displayName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="overflow-hidden">
+                    <p className="text-xs font-bold text-slate-900 truncate leading-tight">
+                      {currentUser.displayName}
+                    </p>
+                    <span className="text-[9px] text-slate-500 font-mono">
+                      {currentUser.role === "admin" ? "Admin PIP" : "Docente"} • {currentUser.dni ? `DNI ${currentUser.dni}` : "Google"}
+                    </span>
+                  </div>
+                </div>
+                {onLogout && (
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                    title="Cerrar Sesión"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              {onOpenSecurityModal && (
+                <button
+                  type="button"
+                  onClick={onOpenSecurityModal}
+                  className="w-full py-1 px-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-[10px] font-bold text-slate-600 hover:text-slate-900 flex items-center justify-center gap-1.5 border border-slate-200 transition-colors cursor-pointer"
+                >
+                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                  <span>Control de Seguridad AIP</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Bottom Institutional Info */}
         <div className="p-3 border-t border-slate-100 bg-slate-50/70 shrink-0">
