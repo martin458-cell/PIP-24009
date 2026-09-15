@@ -205,6 +205,146 @@
         }
       },
       "required": ["id", "institutionalPin", "whitelistedEmails", "adminEmail"]
+    },
+    "RegistroBiblioteca": {
+      "title": "RegistroBiblioteca",
+      "description": "Registro de uso de biblioteca escolar, libros físicos, tabletas MINEDU y préstamos pedagógicos",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identificador único generado por Firestore"
+        },
+        "docenteDni": {
+          "type": "string",
+          "description": "DNI del docente que solicita o hace uso del recurso"
+        },
+        "docenteNombre": {
+          "type": "string",
+          "description": "Nombre completo del docente"
+        },
+        "fecha": {
+          "type": "string",
+          "description": "Fecha en formato YYYY-MM-DD"
+        },
+        "horarioId": {
+          "type": "string",
+          "description": "Identificador del bloque de horario"
+        },
+        "horarioTexto": {
+          "type": "string",
+          "description": "Texto descriptivo del horario y horas pedagógicas"
+        },
+        "grado": {
+          "type": "string",
+          "description": "Grado de los estudiantes"
+        },
+        "seccion": {
+          "type": "string",
+          "description": "Sección atendida"
+        },
+        "estudiantesAsistentes": {
+          "type": "number",
+          "description": "Cantidad de estudiantes participantes"
+        },
+        "area": {
+          "type": "string",
+          "description": "Área curricular o propósito pedagógico"
+        },
+        "actividadProposito": {
+          "type": "string",
+          "description": "Propósito de la actividad de lectura o uso de tabletas"
+        },
+        "tipoRecurso": {
+          "type": "string",
+          "description": "Tipo de recurso: libro, tableta o ambos",
+          "enum": ["libro", "tableta", "ambos"]
+        },
+        "modalidad": {
+          "type": "string",
+          "description": "Uso en sala, préstamo a aula o domicilio",
+          "enum": ["sala", "aula", "prestamo_domicilio"]
+        },
+        "estadoDevolucion": {
+          "type": "string",
+          "description": "Estado de devolución: devuelto, en_uso u observado",
+          "enum": ["devuelto", "en_uso", "observado"]
+        },
+        "observaciones": {
+          "type": "string",
+          "description": "Observaciones generales del préstamo o sesión"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp de creación"
+        }
+      },
+      "required": ["id", "docenteDni", "docenteNombre", "fecha", "horarioTexto", "tipoRecurso", "modalidad", "estadoDevolucion", "createdAt"]
+    },
+    "LibroStock": {
+      "title": "LibroStock",
+      "description": "Inventario de libros físicos en stock en la biblioteca escolar",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Identificador único en Firestore"
+        },
+        "codigo": {
+          "type": "string",
+          "description": "Código patrimonial o signatura topográfica"
+        },
+        "titulo": {
+          "type": "string",
+          "description": "Título de la obra o texto escolar"
+        },
+        "autor": {
+          "type": "string",
+          "description": "Autor principal o entidad editorial"
+        },
+        "editorial": {
+          "type": "string",
+          "description": "Editorial o sello de publicación"
+        },
+        "categoria": {
+          "type": "string",
+          "description": "Categoría o género temático del libro"
+        },
+        "gradoSugerido": {
+          "type": "string",
+          "description": "Grado académico sugerido (1° al 6° o Todos)"
+        },
+        "cantidadTotal": {
+          "type": "number",
+          "description": "Cantidad total de ejemplares en stock"
+        },
+        "cantidadDisponible": {
+          "type": "number",
+          "description": "Cantidad de ejemplares disponibles"
+        },
+        "ubicacion": {
+          "type": "string",
+          "description": "Ubicación en estante, repisa o pabellón"
+        },
+        "estadoFisico": {
+          "type": "string",
+          "description": "Estado de conservación física",
+          "enum": ["Excelente", "Bueno", "Regular", "En reparación"]
+        },
+        "esPlanLector": {
+          "type": "boolean",
+          "description": "Si pertenece al Plan Lector institucional"
+        },
+        "observaciones": {
+          "type": "string",
+          "description": "Observaciones adicionales"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp de registro"
+        }
+      },
+      "required": ["id", "codigo", "titulo", "autor", "categoria", "cantidadTotal", "cantidadDisponible", "ubicacion", "estadoFisico", "createdAt"]
     }
   },
   "firestore": {
@@ -215,6 +355,14 @@
     "registros_aip/{registroId}": {
       "schema": "RegistroAip",
       "description": "Colección global de registros de ingreso al Aula de Innovación Pedagógica (AIP)"
+    },
+    "registros_biblioteca/{registroId}": {
+      "schema": "RegistroBiblioteca",
+      "description": "Colección global de registros de biblioteca escolar (libros físicos y tabletas)"
+    },
+    "libros_stock/{libroId}": {
+      "schema": "LibroStock",
+      "description": "Colección de libros físicos en stock y catálogo bibliográfico de la I.E."
     },
     "fechas_especiales/{fechaId}": {
       "schema": "FechaEspecial",

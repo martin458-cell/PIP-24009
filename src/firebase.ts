@@ -9,7 +9,9 @@ import {
 } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, deleteDoc, getDocs, collection, onSnapshot, getDocFromServer } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
-import { Docente, RegistroAip, FechaEspecial, AuthUser, SecurityConfig } from './types';
+import { Docente, RegistroAip, RegistroBiblioteca, LibroStock, FechaEspecial, AuthUser, SecurityConfig } from './types';
+import { INITIAL_LIBROS_STOCK } from './initialLibrosStock';
+export { INITIAL_LIBROS_STOCK };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
@@ -203,6 +205,200 @@ export async function deleteRegistroAipFromFirebase(id: string): Promise<void> {
     handleFirestoreError(error, OperationType.DELETE, path);
   }
 }
+
+// -------------------------------------------------------------
+// Biblioteca Escolar (Libros Físicos & Tabletas MINEDU)
+// -------------------------------------------------------------
+const REGISTROS_BIBLIOTECA_COLL = 'registros_biblioteca';
+
+export function subscribeRegistrosBiblioteca(
+  onUpdate: (registros: RegistroBiblioteca[]) => void,
+  onError?: (error: Error) => void
+) {
+  return onSnapshot(
+    collection(db, REGISTROS_BIBLIOTECA_COLL),
+    (snapshot) => {
+      const list: RegistroBiblioteca[] = [];
+      snapshot.forEach((doc) => {
+        list.push(doc.data() as RegistroBiblioteca);
+      });
+      // Sort by creation time or date descending
+      list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      onUpdate(list);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, REGISTROS_BIBLIOTECA_COLL);
+      if (onError) {
+        onError(error instanceof Error ? error : new Error(String(error)));
+      }
+    }
+  );
+}
+
+export async function saveRegistroBibliotecaToFirebase(registro: RegistroBiblioteca): Promise<void> {
+  const path = `${REGISTROS_BIBLIOTECA_COLL}/${registro.id}`;
+  try {
+    await setDoc(doc(db, REGISTROS_BIBLIOTECA_COLL, registro.id), registro);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteRegistroBibliotecaFromFirebase(id: string): Promise<void> {
+  const path = `${REGISTROS_BIBLIOTECA_COLL}/${id}`;
+  try {
+    await deleteDoc(doc(db, REGISTROS_BIBLIOTECA_COLL, id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+// -------------------------------------------------------------
+// Libros en Stock (Inventario de Libros en Base de Datos)
+// -------------------------------------------------------------
+const LIBROS_STOCK_COLL = 'libros_stock';
+
+export function subscribeLibrosStock(
+  onUpdate: (libros: LibroStock[]) => void,
+  onError?: (error: Error) => void
+) {
+  return onSnapshot(
+    collection(db, LIBROS_STOCK_COLL),
+    (snapshot) => {
+      const list: LibroStock[] = [];
+      snapshot.forEach((doc) => {
+        list.push(doc.data() as LibroStock);
+      });
+      // Sort alphabetically by title or code
+      list.sort((a, b) => a.titulo.localeCompare(b.titulo));
+      onUpdate(list);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.LIST, LIBROS_STOCK_COLL);
+      if (onError) {
+        onError(error instanceof Error ? error : new Error(String(error)));
+      }
+    }
+  );
+}
+
+export async function saveLibroStockToFirebase(libro: LibroStock): Promise<void> {
+  const path = `${LIBROS_STOCK_COLL}/${libro.id}`;
+  try {
+    await setDoc(doc(db, LIBROS_STOCK_COLL, libro.id), libro);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+export async function deleteLibroStockFromFirebase(id: string): Promise<void> {
+  const path = `${LIBROS_STOCK_COLL}/${id}`;
+  try {
+    await deleteDoc(doc(db, LIBROS_STOCK_COLL, id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+}
+
+
+export const INITIAL_BIBLIOTECA_RECORDS: RegistroBiblioteca[] = [
+  {
+    id: "bib-2026-001",
+    docenteDni: "40812345",
+    docenteNombre: "QUISPE ROJAS, Carmen Rosa",
+    fecha: new Date().toISOString().split("T")[0],
+    horarioId: "1-2",
+    horarioTexto: "1° y 2° Hora Pedagógica (08:00 - 09:30)",
+    horaInicio: "08:00",
+    horaFin: "09:30",
+    grado: "4°",
+    seccion: "A",
+    estudiantesAsistentes: 26,
+    area: "Plan Lector & Comunicación",
+    actividadProposito: "Lectura comentada y análisis del cuento 'Paco Yunque' de César Vallejo.",
+    tipoRecurso: "libro",
+    librosDetalle: {
+      titulos: "Paco Yunque - Colección Plan Lector MINEDU",
+      cantidad: 26,
+      categoria: "Plan Lector Institucional",
+      codigoLibro: "PL-04-A"
+    },
+    modalidad: "sala",
+    estadoDevolucion: "devuelto",
+    fechaHoraDevolucion: "09:35",
+    condicionDevolucion: "26 ejemplares devueltos en buen estado.",
+    obraPlanLector: "Paco Yunque",
+    responsableEntrega: "Prof. Martin Cahuana (PIP / Biblioteca)",
+    observaciones: "Estudiantes muy participativos identificando el valor de la justicia y empatía.",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "bib-2026-002",
+    docenteDni: "28765432",
+    docenteNombre: "MENDOZA FLORES, Jorge Luis",
+    fecha: new Date().toISOString().split("T")[0],
+    horarioId: "3-4",
+    horarioTexto: "3° y 4° Hora Pedagógica (09:45 - 11:15)",
+    horaInicio: "09:45",
+    horaFin: "11:15",
+    grado: "5°",
+    seccion: "B",
+    estudiantesAsistentes: 24,
+    area: "Ciencia y Tecnología",
+    actividadProposito: "Indagación científica sobre los ecosistemas andinos de Lucanas mediante app interactiva.",
+    tipoRecurso: "tableta",
+    tabletasDetalle: {
+      cantidad: 24,
+      loteMaletin: "Maletín N° 01 (Tabletas 01 a 24)",
+      aplicativoRecurso: "Biblioteca Digital MINEDU & PerúEduca Offline",
+      accesorios: "24 tabletas con fundas protectoras y pantalla limpia"
+    },
+    modalidad: "aula",
+    estadoDevolucion: "en_uso",
+    fechaHoraDevolucion: "",
+    condicionDevolucion: "En uso pedagógico en el aula del 5° B",
+    obraPlanLector: "",
+    responsableEntrega: "Prof. Martin Cahuana (PIP)",
+    observaciones: "Préstamo solicitado para trabajo grupal en el aula. Retorno programado a las 11:15.",
+    createdAt: new Date(Date.now() - 3600000).toISOString()
+  },
+  {
+    id: "bib-2026-003",
+    docenteDni: "10987654",
+    docenteNombre: "HUAMÁN PÉREZ, Gladys Elizabeth",
+    fecha: new Date().toISOString().split("T")[0],
+    horarioId: "5-6",
+    horarioTexto: "5° y 6° Hora Pedagógica (11:30 - 13:00)",
+    horaInicio: "11:30",
+    horaFin: "13:00",
+    grado: "3°",
+    seccion: "A",
+    estudiantesAsistentes: 22,
+    area: "Comunicación & TIC",
+    actividadProposito: "Comprensión lectora híbrida: lectura en libro físico y grabación de cuentacuentos en tabletas.",
+    tipoRecurso: "ambos",
+    librosDetalle: {
+      titulos: "El Bagrecico - Francisco Izquierdo Ríos",
+      cantidad: 22,
+      categoria: "Literatura Infantil / Cuentos",
+      codigoLibro: "LI-03-B"
+    },
+    tabletasDetalle: {
+      cantidad: 11,
+      loteMaletin: "Maletín N° 02 (Tabletas 01 a 11)",
+      aplicativoRecurso: "Grabadora de Audio / Cuentacuentos & Scratch Jr",
+      accesorios: "Uso por parejas de estudiantes"
+    },
+    modalidad: "sala",
+    estadoDevolucion: "devuelto",
+    fechaHoraDevolucion: "13:02",
+    condicionDevolucion: "Todos los libros y tabletas entregados en orden.",
+    obraPlanLector: "El Bagrecico",
+    responsableEntrega: "Prof. Martin Cahuana (PIP)",
+    observaciones: "Excelente integración entre el libro físico y la tableta como herramienta de creación.",
+    createdAt: new Date(Date.now() - 7200000).toISOString()
+  }
+];
 
 // Special Dates collection (Fechas Especiales / Justificaciones AIP)
 const FECHAS_ESPECIALES_COLL = 'fechas_especiales';

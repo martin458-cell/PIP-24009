@@ -96,7 +96,7 @@ export const HORA_OPTIONS: HoraOption[] = [
   { value: 5.6, label: "5° y 6° Hora Pedagógica" }
 ];
 
-export type ActiveTabType = "dashboard" | "docentes" | "aip" | "calendario" | "informe-mensual" | "reportes" | "metricas";
+export type ActiveTabType = "dashboard" | "docentes" | "aip" | "biblioteca" | "calendario" | "informe-mensual" | "reportes" | "metricas";
 
 export interface SystemModule {
   id: string;
@@ -137,8 +137,20 @@ export const DEFAULT_MODULES: SystemModule[] = [
     routeTab: "aip"
   },
   {
-    id: "mod-docentes",
+    id: "mod-biblioteca",
     code: "MOD-03",
+    name: "Biblioteca Escolar (Libros & Tabletas)",
+    shortDescription: "Gestión y registro de uso de libros físicos, tabletas MINEDU, horario pedagógico, préstamos y Plan Lector.",
+    iconName: "BookOpen",
+    category: "Pedagógico",
+    status: "activo",
+    badge: "Libros & Tabletas",
+    color: "emerald",
+    routeTab: "biblioteca"
+  },
+  {
+    id: "mod-docentes",
+    code: "MOD-04",
     name: "Directorio de Personal Docente",
     shortDescription: "Fichero del personal docente, carpetas personales, especialidades, asignación de grados y carga masiva Excel.",
     iconName: "Users",
@@ -149,7 +161,7 @@ export const DEFAULT_MODULES: SystemModule[] = [
   },
   {
     id: "mod-calendario",
-    code: "MOD-04",
+    code: "MOD-05",
     name: "Calendario de Fechas Especiales",
     shortDescription: "Control de días no laborables, feriados, jornadas de gestión y fechas especiales que justifican la no asistencia docente al AIP.",
     iconName: "CalendarCheck",
@@ -161,7 +173,7 @@ export const DEFAULT_MODULES: SystemModule[] = [
   },
   {
     id: "mod-informe-mensual",
-    code: "MOD-05",
+    code: "MOD-06",
     name: "Informe Mensual de Actividades (PIP)",
     shortDescription: "Elaborador y estructurador dinámico del informe mensual oficial con descarga directa en Microsoft Word (.docx).",
     iconName: "FileSpreadsheet",
@@ -173,7 +185,7 @@ export const DEFAULT_MODULES: SystemModule[] = [
   },
   {
     id: "mod-reportes",
-    code: "MOD-06",
+    code: "MOD-07",
     name: "Centro de Reportes & PDF Oficial",
     shortDescription: "Generación y exportación de fichas de asistencia por mes completo, semanas y personal en PDF.",
     iconName: "FileText",
@@ -185,7 +197,7 @@ export const DEFAULT_MODULES: SystemModule[] = [
   },
   {
     id: "mod-metricas",
-    code: "MOD-07",
+    code: "MOD-08",
     name: "Métricas & Monitoreo Escolar",
     shortDescription: "Gráficos de concurrencia, áreas curriculares más trabajadas y cobertura institucional.",
     iconName: "BarChart3",
@@ -308,4 +320,150 @@ export interface SecurityConfig {
   adminEmail: string;
   updatedAt: string;
 }
+
+// =========================================================================
+// TIPOS Y CONSTANTES PARA EL MÓDULO DE BIBLIOTECA ESCOLAR (LIBROS & TABLETAS)
+// =========================================================================
+
+export type TipoRecursoBiblioteca = "libro" | "tableta" | "ambos";
+
+export type ModalidadUsoBiblioteca = "sala" | "aula" | "prestamo_domicilio";
+
+export type EstadoDevolucionBiblioteca = "devuelto" | "en_uso" | "observado";
+
+export interface HorarioBibliotecaOption {
+  value: string;
+  label: string;
+  bloque: string;
+  rango: string;
+}
+
+export const HORARIOS_BIBLIOTECA: HorarioBibliotecaOption[] = [
+  { value: "1-2", label: "1° y 2° Hora Pedagógica (08:00 - 09:30)", bloque: "1° y 2° Hora", rango: "08:00 - 09:30" },
+  { value: "3-4", label: "3° y 4° Hora Pedagógica (09:45 - 11:15)", bloque: "3° y 4° Hora", rango: "09:45 - 11:15" },
+  { value: "5-6", label: "5° y 6° Hora Pedagógica (11:30 - 13:00)", bloque: "5° y 6° Hora", rango: "11:30 - 13:00" },
+  { value: "recreo", label: "Recreo Lector / Horario Libre (09:30 - 09:45)", bloque: "Recreo Lector", rango: "09:30 - 09:45" },
+  { value: "tarde-1-2", label: "Turno Tarde - 1° y 2° Hora (13:15 - 14:45)", bloque: "Tarde 1°-2°", rango: "13:15 - 14:45" },
+  { value: "personalizado", label: "Horario Personalizado / Coordinación", bloque: "Personalizado", rango: "Flexible" }
+];
+
+export const CATEGORIAS_LIBROS_BIBLIOTECA = [
+  "Plan Lector Institucional",
+  "Textos Escolares MINEDU",
+  "Cuadernos de Trabajo",
+  "Literatura Infantil / Cuentos",
+  "Enciclopedias & Diccionarios",
+  "Ciencias & Naturaleza",
+  "Historia, Geografía y Perú",
+  "Manuales y Guías Docentes"
+];
+
+export const APLICATIVOS_TABLETAS_LIST = [
+  "Biblioteca Digital MINEDU",
+  "Scratch Jr / Pensamiento Computacional",
+  "GeoGebra Primaria",
+  "PerúEduca Offline",
+  "Aprendo en Casa 2026",
+  "Khan Academy Offline",
+  "Diccionario de la Lengua Española (DLE)",
+  "Lector de Libros EPUB / PDF",
+  "Grabadora de Audio / Cuentacuentos"
+];
+
+export interface ObraPlanLector {
+  titulo: string;
+  autor: string;
+  gradoRecomendado: string;
+  categoria: string;
+}
+
+export const OBRAS_PLAN_LECTOR_RECOMENDADAS: ObraPlanLector[] = [
+  { titulo: "Paco Yunque", autor: "César Vallejo", gradoRecomendado: "4°", categoria: "Cuentos Peruanos" },
+  { titulo: "El Bagrecico", autor: "Francisco Izquierdo Ríos", gradoRecomendado: "3°", categoria: "Cuentos Amazónicos" },
+  { titulo: "El Caballero Carmelo", autor: "Abraham Valdelomar", gradoRecomendado: "5°", categoria: "Narrativa Peruana" },
+  { titulo: "Cholito en los Andes Mágicos", autor: "Óscar Colchado Lucio", gradoRecomendado: "4°", categoria: "Literatura Infantil" },
+  { titulo: "Cuentos Andinos", autor: "Enrique López Albújar", gradoRecomendado: "6°", categoria: "Literatura Andina" },
+  { titulo: "Warma Kuyay", autor: "José María Arguedas", gradoRecomendado: "6°", categoria: "Literatura Indigenista" },
+  { titulo: "Fábulas Quechuas y Andinas", autor: "Tradición Oral / MINEDU", gradoRecomendado: "2°", categoria: "Fábulas y Mitos" },
+  { titulo: "La Niña de la Sombra de Colores", autor: "César Vega", gradoRecomendado: "1°", categoria: "Lectura Inicial" },
+  { titulo: "El Torito de la Piel Brillante", autor: "José María Arguedas", gradoRecomendado: "3°", categoria: "Mitos y Leyendas" },
+  { titulo: "Los Tres Chanchitos y el Lobo Feroz", autor: "Cuento Tradicional", gradoRecomendado: "1°", categoria: "Cuentos Clásicos" },
+  { titulo: "El Principito", autor: "Antoine de Saint-Exupéry", gradoRecomendado: "5°", categoria: "Literatura Universal" }
+];
+
+export interface LibrosDetalleBiblioteca {
+  titulos: string;
+  cantidad: number;
+  categoria?: string;
+  codigoLibro?: string;
+}
+
+export interface TabletasDetalleBiblioteca {
+  cantidad: number;
+  loteMaletin?: string;
+  aplicativoRecurso?: string;
+  accesorios?: string;
+}
+
+export interface RegistroBiblioteca {
+  id: string; // Firebase gen ID
+  docenteDni: string;
+  docenteNombre: string;
+  fecha: string; // YYYY-MM-DD
+  
+  // Horario
+  horarioId: string; // ej: "1-2", "3-4", "5-6", "recreo", "personalizado"
+  horarioTexto: string; // ej: "1° y 2° Hora Pedagógica (08:00 - 09:30)"
+  horaInicio?: string;
+  horaFin?: string;
+
+  // Datos del grupo
+  grado: string;
+  seccion: string;
+  estudiantesAsistentes: number;
+  area: string; // Plan Lector, Comunicación, Ciencia, etc.
+  actividadProposito: string;
+
+  // Tipo de recurso
+  tipoRecurso: TipoRecursoBiblioteca; // "libro" | "tableta" | "ambos"
+
+  // Detalles de libros físicos
+  librosDetalle?: LibrosDetalleBiblioteca;
+
+  // Detalles de tabletas
+  tabletasDetalle?: TabletasDetalleBiblioteca;
+
+  // Propuesta de Mejora Institucional:
+  // Control de préstamo, devolución, modalidad y fomento lector
+  modalidad: ModalidadUsoBiblioteca; // "sala" | "aula" | "prestamo_domicilio"
+  estadoDevolucion: EstadoDevolucionBiblioteca; // "devuelto" | "en_uso" | "observado"
+  fechaHoraDevolucion?: string;
+  condicionDevolucion?: string;
+  obraPlanLector?: string;
+  responsableEntrega?: string;
+  observaciones: string;
+  createdAt: string;
+}
+
+export type EstadoFisicoLibro = "Excelente" | "Bueno" | "Regular" | "En reparación";
+
+export interface LibroStock {
+  id: string; // ID único en Firestore
+  codigo: string; // Código patrimonial o signatura topográfica (ej: "LIB-LIT-001")
+  titulo: string; // Título de la obra o texto escolar
+  autor: string; // Autor principal o editorial
+  editorial?: string; // Editorial o MINEDU
+  categoria: string; // Cuentos, Literatura, Ciencias, Plan Lector, etc.
+  gradoSugerido: string; // 1° al 6° o "Todos los grados"
+  cantidadTotal: number; // Total de ejemplares en inventario
+  cantidadDisponible: number; // Ejemplares disponibles para préstamo
+  ubicacion: string; // Estante A, Repisa 3, etc.
+  estadoFisico: EstadoFisicoLibro;
+  esPlanLector?: boolean;
+  isbn?: string;
+  observaciones?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 

@@ -33,6 +33,7 @@ interface SidebarProps {
   onChangeAipSubTab: (sub: "historial" | "registro") => void;
   totalDocentes: number;
   totalAip: number;
+  totalBiblioteca?: number;
   modules: SystemModule[];
   onOpenNewDocente: () => void;
   onOpenNewAip: () => void;
@@ -53,6 +54,7 @@ export default function Sidebar({
   onChangeAipSubTab,
   totalDocentes,
   totalAip,
+  totalBiblioteca = 0,
   modules,
   onOpenNewDocente,
   onOpenNewAip,
@@ -69,6 +71,8 @@ export default function Sidebar({
         return <LayoutDashboard className={className} />;
       case "Monitor":
         return <Monitor className={className} />;
+      case "BookOpen":
+        return <BookOpen className={className} />;
       case "Users":
         return <Users className={className} />;
       case "BarChart3":
@@ -77,7 +81,6 @@ export default function Sidebar({
         return <FileText className={className} />;
       case "FileSpreadsheet":
       case "FileEdit":
-      case "BookOpen":
         return <FileSpreadsheet className={className} />;
       case "CalendarCheck":
       case "Calendar":
@@ -170,7 +173,7 @@ export default function Sidebar({
                   type="button"
                   onClick={() => {
                     onChangeTab(mod.routeTab);
-                    if (window.innerWidth < 1024 && (mod.routeTab === "dashboard" || mod.routeTab === "metricas" || mod.routeTab === "reportes" || mod.routeTab === "informe-mensual")) {
+                    if (window.innerWidth < 1024 && (mod.routeTab === "dashboard" || mod.routeTab === "biblioteca" || mod.routeTab === "metricas" || mod.routeTab === "reportes" || mod.routeTab === "informe-mensual")) {
                       onCloseMobile();
                     }
                   }}
@@ -215,7 +218,16 @@ export default function Sidebar({
                         {totalAip}
                       </span>
                     )}
-                    {mod.badge && !["docentes", "aip"].includes(mod.routeTab) && (
+                    {mod.routeTab === "biblioteca" && (
+                      <span
+                        className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                          isCurrent ? "bg-white/20 text-white" : "bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        {totalBiblioteca}
+                      </span>
+                    )}
+                    {mod.badge && !["docentes", "aip", "biblioteca"].includes(mod.routeTab) && (
                       <span
                         className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
                           isCurrent ? "bg-amber-400 text-slate-950" : "bg-slate-100 text-slate-600"

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Docente, RegistroAip, SystemModule, DEFAULT_MODULES, ActiveTabType, FechaEspecial, AuthUser, SecurityConfig } from "./types";
+import { Docente, RegistroAip, RegistroBiblioteca, LibroStock, SystemModule, DEFAULT_MODULES, ActiveTabType, FechaEspecial, AuthUser, SecurityConfig } from "./types";
 import { INITIAL_DOCENTES } from "./initialData";
 import { INITIAL_FECHAS_ESPECIALES } from "./initialSpecialDates";
 import { 
@@ -10,6 +10,14 @@ import {
   subscribeRegistrosAip,
   saveRegistroAipToFirebase,
   deleteRegistroAipFromFirebase,
+  subscribeRegistrosBiblioteca,
+  saveRegistroBibliotecaToFirebase,
+  deleteRegistroBibliotecaFromFirebase,
+  INITIAL_BIBLIOTECA_RECORDS,
+  subscribeLibrosStock,
+  saveLibroStockToFirebase,
+  deleteLibroStockFromFirebase,
+  INITIAL_LIBROS_STOCK,
   subscribeFechasEspeciales,
   saveFechaEspecialToFirebase,
   deleteFechaEspecialFromFirebase,
@@ -36,6 +44,7 @@ import AipStats from "./components/AipStats";
 import AipPdfReportModal from "./components/AipPdfReportModal";
 import MonthlyReportModule from "./components/MonthlyReportModule";
 import SpecialDatesCalendar from "./components/SpecialDatesCalendar";
+import BibliotecaModule from "./components/BibliotecaModule";
 import LoginScreen from "./components/LoginScreen";
 import SecurityAccessModal from "./components/SecurityAccessModal";
 import { SCHOOL_LOGO_PATH } from "./assets/schoolLogo";
@@ -93,6 +102,8 @@ export default function App() {
   // Main Data Source States
   const [docentes, setDocentes] = useState<Docente[]>([]);
   const [registros, setRegistros] = useState<RegistroAip[]>([]);
+  const [bibliotecaRegistros, setBibliotecaRegistros] = useState<RegistroBiblioteca[]>([]);
+  const [librosStock, setLibrosStock] = useState<LibroStock[]>([]);
   const [fechasEspeciales, setFechasEspeciales] = useState<FechaEspecial[]>([]);
   
   // View/Edit Modal States
@@ -186,6 +197,43 @@ export default function App() {
       showToast("Error de sincronización de AIP con Firestore: " + error.message, "error");
     });
 
+    // Subscribe to Biblioteca Escolar registers in Firestore
+    const unsubscribeBiblioteca = subscribeRegistrosBiblioteca(async (list) => {
+      const hasSeededBib = localStorage.getItem("iepm_firebase_bib_seeded");
+      if (list.length === 0 && !hasSeededBib) {
+        try {
+          const savePromises = INITIAL_BIBLIOTECA_RECORDS.map((b) => saveRegistroBibliotecaToFirebase(b));
+          await Promise.all(savePromises);
+          localStorage.setItem("iepm_firebase_bib_seeded", "true");
+        } catch (e) {
+          console.error("Error seeding Biblioteca:", e);
+        }
+      } else {
+        setBibliotecaRegistros(list);
+      }
+    }, (error) => {
+      showToast("Error de sincronización de Biblioteca con Firestore: " + error.message, "error");
+    });
+
+    // Subscribe to Libros en Stock in Firestore (Inventario oficial)
+    const unsubscribeLibrosStock = subscribeLibrosStock(async (list) => {
+      const hasSeededLibros = localStorage.getItem("iepm_firebase_libros_stock_seeded");
+      if (list.length === 0 && !hasSeededLibros) {
+        try {
+          const savePromises = INITIAL_LIBROS_STOCK.map((l) => saveLibroStockToFirebase(l));
+          await Promise.all(savePromises);
+          localStorage.setItem("iepm_firebase_libros_stock_seeded", "true");
+          showToast("Catálogo inicial de libros en stock cargado en Firestore con éxito.", "success");
+        } catch (e) {
+          console.error("Error seeding Libros Stock:", e);
+        }
+      } else {
+        setLibrosStock(list);
+      }
+    }, (error) => {
+      showToast("Error de sincronización de Libros en Stock con Firestore: " + error.message, "error");
+    });
+
     // Subscribe to Fechas Especiales in Firestore
     const unsubscribeFechas = subscribeFechasEspeciales(async (list) => {
       const hasSeededFechas = localStorage.getItem("iepm_firebase_fechas_seeded");
@@ -210,6 +258,8 @@ export default function App() {
       unsubscribeAuth();
       unsubscribeDocentes();
       unsubscribeAip();
+      unsubscribeBiblioteca();
+      unsubscribeLibrosStock();
       unsubscribeFechas();
     };
   }, []);
@@ -337,6 +387,45 @@ export default function App() {
         setConfirmConfig(null);
       }
     });
+  };
+
+  // Biblioteca Add or update handler
+  const handleSaveRegistroBiblioteca = async (registroToSave: RegistroBiblioteca) => {
+    try {
+      await saveRegistroBibliotecaToFirebase(registroToSave);
+      showToast(`Registro de biblioteca guardado con éxito en Firebase.`, "success");
+    } catch (e) {
+      showToast(`Error al guardar en biblioteca: ${e instanceof Error ? e.message : String(e)}`, "error");
+    }
+  };
+
+  // Biblioteca Delete handler
+  const handleDeleteRegistroBiblioteca = async (id: string) => {
+    try {
+      await deleteRegistroBibliotecaFromFirebase(id);
+      showToast(`Registro de biblioteca eliminado correctamente.`, "info");
+    } catch (e) {
+      showToast(`Error al eliminar en biblioteca: ${e instanceof Error ? e.message : String(e)}`, "error");
+    }
+  };
+
+  // Libros en Stock (Inventario BD) Handlers
+  const handleSaveLibroStock = async (libro: LibroStock) => {
+    try {
+      await saveLibroStockToFirebase(libro);
+      showToast(`Libro "${libro.titulo}" guardado en la base de datos de la biblioteca.`, "success");
+    } catch (e) {
+      showToast(`Error al guardar libro en base de datos: ${e instanceof Error ? e.message : String(e)}`, "error");
+    }
+  };
+
+  const handleDeleteLibroStock = async (id: string) => {
+    try {
+      await deleteLibroStockFromFirebase(id);
+      showToast(`Libro eliminado de la base de datos de stock.`, "info");
+    } catch (e) {
+      showToast(`Error al eliminar libro: ${e instanceof Error ? e.message : String(e)}`, "error");
+    }
   };
 
   // Special Dates Handlers (Firebase CRUD)
@@ -489,6 +578,7 @@ export default function App() {
           onChangeAipSubTab={(sub) => setAipSubTab(sub)}
           totalDocentes={docentes.length}
           totalAip={registros.length}
+          totalBiblioteca={bibliotecaRegistros.length}
           modules={modules}
           currentUser={currentUser}
           onLogout={handleLogout}
@@ -540,6 +630,14 @@ export default function App() {
                   </span>
                 </>
               )}
+              {activeTab === "biblioteca" && (
+                <>
+                  <ChevronRight className="w-3 h-3 text-slate-300" />
+                  <span className="text-emerald-700 font-medium capitalize">
+                    Libros Físicos y Tabletas
+                  </span>
+                </>
+              )}
             </div>
 
             {/* Quick Actions Shortcuts */}
@@ -556,6 +654,19 @@ export default function App() {
                 >
                   <PlusCircle className="w-3.5 h-3.5" />
                   <span>+ Visita AIP</span>
+                </button>
+              )}
+
+              {activeTab !== "biblioteca" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("biblioteca");
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  <span>+ Biblioteca / Tabletas</span>
                 </button>
               )}
 
@@ -656,7 +767,7 @@ export default function App() {
                   </h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Module 1: AIP */}
                   <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-[#D92323]/60 transition-all flex flex-col justify-between group">
                     <div>
@@ -701,7 +812,40 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Module 2: Docentes */}
+                  {/* Module 2: Biblioteca Escolar & Tabletas */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-emerald-500/60 transition-all flex flex-col justify-between group">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                          <BookOpen className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          {bibliotecaRegistros.length} Préstamos
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-black text-slate-900 group-hover:text-emerald-700 transition-colors">
+                        Biblioteca y Tabletas
+                      </h4>
+                      <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                        Registro de docentes para libros físicos, tabletas o ambos con horarios de turno y plan lector.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2 pt-4 mt-4 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab("biblioteca");
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white text-xs font-bold transition-all cursor-pointer text-center"
+                      >
+                        Abrir Módulo
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Module 3: Docentes */}
                   <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-blue-500/60 transition-all flex flex-col justify-between group">
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -745,7 +889,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Module 3: Fechas Especiales & Justificaciones AIP */}
+                  {/* Module 4: Fechas Especiales & Justificaciones AIP */}
                   <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-amber-500/60 transition-all flex flex-col justify-between group">
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -778,18 +922,18 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Module 4: Informe Mensual Word */}
-                  <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-emerald-500/60 transition-all flex flex-col justify-between group">
+                  {/* Module 5: Informe Mensual Word */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-teal-500/60 transition-all flex flex-col justify-between group">
                     <div>
                       <div className="flex items-center justify-between mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                        <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center font-bold">
                           <FileSpreadsheet className="w-5 h-5" />
                         </div>
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-100">
                           Word .docx
                         </span>
                       </div>
-                      <h4 className="text-sm font-black text-slate-900 group-hover:text-emerald-600 transition-colors">
+                      <h4 className="text-sm font-black text-slate-900 group-hover:text-teal-600 transition-colors">
                         Informe Mensual PIP
                       </h4>
                       <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
@@ -804,14 +948,14 @@ export default function App() {
                           setActiveTab("informe-mensual");
                           window.scrollTo({ top: 0, behavior: "smooth" });
                         }}
-                        className="w-full py-2 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white text-xs font-bold transition-all cursor-pointer text-center"
+                        className="w-full py-2 px-2.5 rounded-xl bg-teal-50 hover:bg-teal-600 text-teal-800 hover:text-white text-xs font-bold transition-all cursor-pointer text-center"
                       >
                         Elaborar Informe Word
                       </button>
                     </div>
                   </div>
 
-                  {/* Module 5: Reportes & PDF */}
+                  {/* Module 6: Reportes & PDF */}
                   <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-purple-500/60 transition-all flex flex-col justify-between group">
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -1229,6 +1373,21 @@ export default function App() {
               )}
 
             </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* MÓDULO: BIBLIOTECA ESCOLAR Y TABLETAS                                      */}
+          {/* ========================================================================= */}
+          {activeTab === "biblioteca" && (
+            <BibliotecaModule
+              registros={bibliotecaRegistros}
+              docentesList={docentes}
+              librosStock={librosStock}
+              onSaveRegistro={handleSaveRegistroBiblioteca}
+              onDeleteRegistro={handleDeleteRegistroBiblioteca}
+              onSaveLibroStock={handleSaveLibroStock}
+              onDeleteLibroStock={handleDeleteLibroStock}
+            />
           )}
 
           {/* ========================================================================= */}

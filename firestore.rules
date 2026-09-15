@@ -72,6 +72,20 @@ service cloud.firestore {
       allow delete: if true;
     }
 
+    match /registros_biblioteca/{registroId} {
+      allow read: if true;
+      allow create: if isValidRegistroId(registroId) && registroId == incoming().id;
+      allow update: if isValidRegistroId(registroId) && registroId == incoming().id;
+      allow delete: if true;
+    }
+
+    match /libros_stock/{libroId} {
+      allow read: if true;
+      allow create: if isValidRegistroId(libroId) && libroId == incoming().id;
+      allow update: if isValidRegistroId(libroId) && libroId == incoming().id;
+      allow delete: if true;
+    }
+
     match /fechas_especiales/{fechaId} {
       allow read: if true;
       allow create: if true;
