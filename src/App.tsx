@@ -1452,7 +1452,7 @@ export default function App() {
       {/* Institutional Dignified Footer */}
       <footer className="bg-slate-900 border-t border-slate-800 py-6 mt-12 z-10 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:text-left">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
@@ -1466,6 +1466,15 @@ export default function App() {
                   © 2026 Plataforma Modular de Registro Escolar y Aula AIP.
                 </p>
               </div>
+            </div>
+
+            <div className="text-center sm:text-left border-y sm:border-y-0 sm:border-x border-slate-800 py-2 sm:py-0 px-0 sm:px-6">
+              <p className="text-xs font-semibold text-slate-300">
+                Derechos de autor: <span className="font-bold text-white">Bach. Martín H. Cahuana Mendoza</span>
+              </p>
+              <p className="text-[10px] text-slate-400">
+                Desarrollo del Sistema y Gestión de Tecnologías Educativas
+              </p>
             </div>
 
             <div className="flex items-center gap-2">

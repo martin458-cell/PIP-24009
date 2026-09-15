@@ -246,12 +246,12 @@ export default function LoginScreen({
           </div>
 
           {/* Institutional Credits */}
-          <div className="text-center mt-6 text-xs text-slate-500 space-y-0.5">
+          <div className="text-center mt-6 text-xs text-slate-500 space-y-1">
             <p className="font-semibold text-slate-400">
               I.E.P.M. N° 24009 &quot;Túpac Amaru II&quot; — Puquio
             </p>
-            <p className="text-[11px]">
-              Plataforma de Control AIP 2026
+            <p className="text-[11px] text-slate-400">
+              Derechos de autor: <span className="font-bold text-slate-300">Bach. Martín H. Cahuana Mendoza</span>
             </p>
           </div>
 

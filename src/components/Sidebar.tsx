@@ -12,7 +12,6 @@ import {
   Calendar, 
   ShieldCheck, 
   ChevronRight,
-  Database,
   ExternalLink,
   Plus,
   FileSpreadsheet,
@@ -391,22 +390,6 @@ export default function Sidebar({
             </div>
           </div>
         )}
-
-        {/* Bottom Institutional Info */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50/70 shrink-0">
-          <div className="p-2.5 rounded-xl bg-white border border-slate-200/80 text-[11px] space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="font-extrabold text-slate-800 flex items-center gap-1.5">
-                <Database className="w-3.5 h-3.5 text-emerald-600" />
-                Firebase Cloud DB
-              </span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            </div>
-            <p className="text-[10px] text-slate-500 leading-tight">
-              Base de datos activa con respaldo en la nube y persistencia en tiempo real.
-            </p>
-          </div>
-        </div>
       </aside>
     </>
   );
