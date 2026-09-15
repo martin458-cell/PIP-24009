@@ -218,6 +218,31 @@ export default function BibliotecaModule({
     document.body.removeChild(link);
   };
 
+  const handleStartEdit = (reg: RegistroBiblioteca) => {
+    setActiveTab("docentes");
+    setEditingRegistro(reg);
+    setShowForm(true);
+    setTimeout(() => {
+      const el = document.getElementById("formulario-atencion-biblioteca");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        window.scrollTo({ top: 320, behavior: "smooth" });
+      }
+    }, 60);
+  };
+
+  // Sample or test records detection
+  const sampleIds = ["bib-2026-001", "bib-2026-002", "bib-2026-003"];
+  const sampleRecords = registros.filter(
+    (r) =>
+      sampleIds.includes(r.id) ||
+      r.id.startsWith("bib-2026-00") ||
+      r.actividadProposito?.toLowerCase().includes("prueba") ||
+      r.actividadProposito?.toLowerCase().includes("ejemplo") ||
+      r.docenteNombre?.toLowerCase().includes("prueba")
+  );
+
   return (
     <div className="space-y-6">
       {/* Top Header Card */}
@@ -438,7 +463,38 @@ export default function BibliotecaModule({
       {/* FORMULARIO DE ATENCIÓN A DOCENTES (MODAL / DESPLEGADO)                    */}
       {/* ========================================================================= */}
       {showForm && (
-        <div className="bg-white rounded-3xl border-2 border-emerald-500 p-6 shadow-2xl relative animate-in fade-in duration-200">
+        <div id="formulario-atencion-biblioteca" className="bg-white rounded-3xl border-2 border-emerald-500 p-6 shadow-2xl relative animate-in fade-in duration-200 scroll-mt-24">
+          {editingRegistro && (
+            <div className="mb-4 p-4 rounded-2xl bg-amber-50 border-2 border-amber-400 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shrink-0 shadow-xs">
+                  <Edit2 className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase font-black tracking-widest text-amber-800">
+                    Modo Edición Activado
+                  </p>
+                  <p className="text-sm font-black text-slate-900">
+                    Editando atención de: <span className="text-amber-900 underline">{editingRegistro.docenteNombre}</span>
+                  </p>
+                  <p className="text-[11px] text-amber-800">
+                    Fecha: {editingRegistro.fecha} • Grado: {editingRegistro.grado} &quot;{editingRegistro.seccion}&quot; • Horario: {editingRegistro.horarioTexto}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingRegistro(null);
+                  setShowForm(false);
+                }}
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black transition-all cursor-pointer shadow-xs"
+              >
+                Cancelar Edición
+              </button>
+            </div>
+          )}
+
           <BibliotecaForm
             initialData={editingRegistro}
             docentesList={docentesList}
@@ -461,6 +517,39 @@ export default function BibliotecaModule({
       {/* ========================================================================= */}
       {activeTab === "docentes" && (
         <div className="space-y-6">
+          {/* Sample records detection banner */}
+          {sampleRecords.length > 0 && (
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-200 text-amber-900 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-xs font-black text-amber-900">
+                    Se detectaron {sampleRecords.length} registro(s) de prueba o ejemplo en la base de datos
+                  </p>
+                  <p className="text-[11px] text-amber-700">
+                    Haga clic a continuación para purgar y dejar su registro oficial 100% limpio.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (window.confirm(`¿Confirma eliminar los ${sampleRecords.length} registro(s) de prueba o ejemplo?`)) {
+                    for (const s of sampleRecords) {
+                      await onDeleteRegistro(s.id);
+                    }
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black transition-all cursor-pointer shadow-xs flex items-center gap-1.5 shrink-0"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Eliminar Registros de Prueba</span>
+              </button>
+            </div>
+          )}
+
           {/* Action and Filter Bar */}
           <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
             <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
@@ -481,7 +570,10 @@ export default function BibliotecaModule({
                   onClick={() => {
                     setEditingRegistro(null);
                     setShowForm(true);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
+                    setTimeout(() => {
+                      const el = document.getElementById("formulario-atencion-biblioteca");
+                      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }, 50);
                   }}
                   className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs transition-all shadow-sm cursor-pointer flex items-center gap-2 whitespace-nowrap"
                 >
@@ -751,18 +843,15 @@ export default function BibliotecaModule({
                           </button>
                         )}
 
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5 w-full sm:w-auto justify-end">
                           <button
                             type="button"
-                            onClick={() => {
-                              setEditingRegistro(reg);
-                              setShowForm(true);
-                              window.scrollTo({ top: 0, behavior: "smooth" });
-                            }}
-                            className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-                            title="Editar registro"
+                            onClick={() => handleStartEdit(reg)}
+                            className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs hover:shadow-xs"
+                            title="Editar o modificar los datos de esta atención"
                           >
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-3.5 h-3.5 text-amber-700 stroke-[2.5]" />
+                            <span>Editar</span>
                           </button>
 
                           <button
@@ -772,7 +861,7 @@ export default function BibliotecaModule({
                                 await onDeleteRegistro(reg.id);
                               }
                             }}
-                            className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition-colors cursor-pointer"
                             title="Eliminar registro"
                           >
                             <Trash2 className="w-4 h-4" />

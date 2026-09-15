@@ -137,20 +137,8 @@ export const DEFAULT_MODULES: SystemModule[] = [
     routeTab: "aip"
   },
   {
-    id: "mod-biblioteca",
-    code: "MOD-03",
-    name: "Biblioteca Escolar (Libros & Tabletas)",
-    shortDescription: "Gestión y registro de uso de libros físicos, tabletas MINEDU, horario pedagógico, préstamos y Plan Lector.",
-    iconName: "BookOpen",
-    category: "Pedagógico",
-    status: "activo",
-    badge: "Libros & Tabletas",
-    color: "emerald",
-    routeTab: "biblioteca"
-  },
-  {
     id: "mod-docentes",
-    code: "MOD-04",
+    code: "MOD-03",
     name: "Directorio de Personal Docente",
     shortDescription: "Fichero del personal docente, carpetas personales, especialidades, asignación de grados y carga masiva Excel.",
     iconName: "Users",
@@ -161,7 +149,7 @@ export const DEFAULT_MODULES: SystemModule[] = [
   },
   {
     id: "mod-calendario",
-    code: "MOD-05",
+    code: "MOD-04",
     name: "Calendario de Fechas Especiales",
     shortDescription: "Control de días no laborables, feriados, jornadas de gestión y fechas especiales que justifican la no asistencia docente al AIP.",
     iconName: "CalendarCheck",
@@ -173,7 +161,7 @@ export const DEFAULT_MODULES: SystemModule[] = [
   },
   {
     id: "mod-informe-mensual",
-    code: "MOD-06",
+    code: "MOD-05",
     name: "Informe Mensual de Actividades (PIP)",
     shortDescription: "Elaborador y estructurador dinámico del informe mensual oficial con descarga directa en Microsoft Word (.docx).",
     iconName: "FileSpreadsheet",
@@ -185,7 +173,7 @@ export const DEFAULT_MODULES: SystemModule[] = [
   },
   {
     id: "mod-reportes",
-    code: "MOD-07",
+    code: "MOD-06",
     name: "Centro de Reportes & PDF Oficial",
     shortDescription: "Generación y exportación de fichas de asistencia por mes completo, semanas y personal en PDF.",
     iconName: "FileText",
@@ -197,7 +185,7 @@ export const DEFAULT_MODULES: SystemModule[] = [
   },
   {
     id: "mod-metricas",
-    code: "MOD-08",
+    code: "MOD-07",
     name: "Métricas & Monitoreo Escolar",
     shortDescription: "Gráficos de concurrencia, áreas curriculares más trabajadas y cobertura institucional.",
     iconName: "BarChart3",
@@ -205,6 +193,18 @@ export const DEFAULT_MODULES: SystemModule[] = [
     status: "activo",
     color: "emerald",
     routeTab: "metricas"
+  },
+  {
+    id: "mod-biblioteca",
+    code: "MOD-08",
+    name: "Biblioteca Escolar (Libros & Tabletas)",
+    shortDescription: "Gestión y registro de uso de libros físicos, tabletas MINEDU, horario pedagógico, préstamos y Plan Lector.",
+    iconName: "BookOpen",
+    category: "Pedagógico",
+    status: "activo",
+    badge: "Libros & Tabletas",
+    color: "emerald",
+    routeTab: "biblioteca"
   }
 ];
 

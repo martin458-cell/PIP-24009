@@ -199,18 +199,23 @@ export default function App() {
 
     // Subscribe to Biblioteca Escolar registers in Firestore
     const unsubscribeBiblioteca = subscribeRegistrosBiblioteca(async (list) => {
-      const hasSeededBib = localStorage.getItem("iepm_firebase_bib_seeded");
-      if (list.length === 0 && !hasSeededBib) {
-        try {
-          const savePromises = INITIAL_BIBLIOTECA_RECORDS.map((b) => saveRegistroBibliotecaToFirebase(b));
-          await Promise.all(savePromises);
-          localStorage.setItem("iepm_firebase_bib_seeded", "true");
-        } catch (e) {
-          console.error("Error seeding Biblioteca:", e);
+      // Purge any sample/test records from the database
+      const sampleIds = ["bib-2026-001", "bib-2026-002", "bib-2026-003"];
+      const samplesToDelete = list.filter((r) => sampleIds.includes(r.id) || r.id.startsWith("bib-2026-00"));
+      
+      if (samplesToDelete.length > 0) {
+        for (const s of samplesToDelete) {
+          try {
+            await deleteRegistroBibliotecaFromFirebase(s.id);
+          } catch (e) {
+            console.warn("Error borrando registro de muestra:", e);
+          }
         }
-      } else {
-        setBibliotecaRegistros(list);
       }
+
+      // Filter out sample records immediately for UI display
+      const realRecords = list.filter((r) => !sampleIds.includes(r.id) && !r.id.startsWith("bib-2026-00"));
+      setBibliotecaRegistros(realRecords);
     }, (error) => {
       showToast("Error de sincronización de Biblioteca con Firestore: " + error.message, "error");
     });
@@ -812,40 +817,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Module 2: Biblioteca Escolar & Tabletas */}
-                  <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-emerald-500/60 transition-all flex flex-col justify-between group">
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
-                          <BookOpen className="w-5 h-5" />
-                        </div>
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                          {bibliotecaRegistros.length} Préstamos
-                        </span>
-                      </div>
-                      <h4 className="text-sm font-black text-slate-900 group-hover:text-emerald-700 transition-colors">
-                        Biblioteca y Tabletas
-                      </h4>
-                      <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
-                        Registro de docentes para libros físicos, tabletas o ambos con horarios de turno y plan lector.
-                      </p>
-                    </div>
-
-                    <div className="flex gap-2 pt-4 mt-4 border-t border-slate-100">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveTab("biblioteca");
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }}
-                        className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white text-xs font-bold transition-all cursor-pointer text-center"
-                      >
-                        Abrir Módulo
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Module 3: Docentes */}
+                  {/* Module 2: Docentes */}
                   <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-blue-500/60 transition-all flex flex-col justify-between group">
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -889,7 +861,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Module 4: Fechas Especiales & Justificaciones AIP */}
+                  {/* Module 3: Fechas Especiales & Justificaciones AIP */}
                   <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-amber-500/60 transition-all flex flex-col justify-between group">
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -922,7 +894,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Module 5: Informe Mensual Word */}
+                  {/* Module 4: Informe Mensual Word */}
                   <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-teal-500/60 transition-all flex flex-col justify-between group">
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -955,7 +927,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Module 6: Reportes & PDF */}
+                  {/* Module 5: Reportes & PDF */}
                   <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-purple-500/60 transition-all flex flex-col justify-between group">
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -988,6 +960,39 @@ export default function App() {
                         className="flex-1 py-2 px-2 rounded-xl bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white text-xs font-bold transition-all cursor-pointer text-center"
                       >
                         PDF
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Module 6: Biblioteca Escolar & Tabletas (Al final de los sectores operativos) */}
+                  <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:border-emerald-500/60 transition-all flex flex-col justify-between group">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                          <BookOpen className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          {bibliotecaRegistros.length} Atenciones
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-black text-slate-900 group-hover:text-emerald-700 transition-colors">
+                        Biblioteca y Tabletas
+                      </h4>
+                      <p className="text-xs text-slate-600 mt-1.5 leading-relaxed">
+                        Registro de docentes para libros físicos, tabletas o ambos con horarios de turno y plan lector.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2 pt-4 mt-4 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab("biblioteca");
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        className="flex-1 py-2 px-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white text-xs font-bold transition-all cursor-pointer text-center"
+                      >
+                        Abrir Módulo
                       </button>
                     </div>
                   </div>
