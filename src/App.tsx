@@ -103,7 +103,7 @@ export default function App() {
   const [docentes, setDocentes] = useState<Docente[]>([]);
   const [registros, setRegistros] = useState<RegistroAip[]>([]);
   const [bibliotecaRegistros, setBibliotecaRegistros] = useState<RegistroBiblioteca[]>([]);
-  const [librosStock, setLibrosStock] = useState<LibroStock[]>([]);
+  const [librosStock, setLibrosStock] = useState<LibroStock[]>(INITIAL_LIBROS_STOCK);
   const [fechasEspeciales, setFechasEspeciales] = useState<FechaEspecial[]>([]);
   
   // View/Edit Modal States

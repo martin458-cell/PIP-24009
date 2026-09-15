@@ -238,7 +238,9 @@ export function subscribeRegistrosBiblioteca(
 export async function saveRegistroBibliotecaToFirebase(registro: RegistroBiblioteca): Promise<void> {
   const path = `${REGISTROS_BIBLIOTECA_COLL}/${registro.id}`;
   try {
-    await setDoc(doc(db, REGISTROS_BIBLIOTECA_COLL, registro.id), registro);
+    // Purge any undefined properties so Firestore SDK does not reject the document with Unsupported field value
+    const cleanData = JSON.parse(JSON.stringify(registro));
+    await setDoc(doc(db, REGISTROS_BIBLIOTECA_COLL, registro.id), cleanData);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -285,7 +287,9 @@ export function subscribeLibrosStock(
 export async function saveLibroStockToFirebase(libro: LibroStock): Promise<void> {
   const path = `${LIBROS_STOCK_COLL}/${libro.id}`;
   try {
-    await setDoc(doc(db, LIBROS_STOCK_COLL, libro.id), libro);
+    // Purge any undefined properties so Firestore SDK does not reject the document
+    const cleanData = JSON.parse(JSON.stringify(libro));
+    await setDoc(doc(db, LIBROS_STOCK_COLL, libro.id), cleanData);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }

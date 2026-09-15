@@ -4,8 +4,7 @@ import {
   Docente,
   LibroStock,
   TipoRecursoBiblioteca,
-  HORARIOS_BIBLIOTECA,
-  OBRAS_PLAN_LECTOR_RECOMENDADAS
+  HORARIOS_BIBLIOTECA
 } from "../types";
 import BibliotecaForm from "./BibliotecaForm";
 import LibrosStockTab from "./LibrosStockTab";
@@ -38,7 +37,8 @@ import {
   Package,
   Library,
   Cpu,
-  CheckCheck
+  CheckCheck,
+  MapPin
 } from "lucide-react";
 
 interface BibliotecaModuleProps {
@@ -74,6 +74,40 @@ export default function BibliotecaModule({
   const [filterTipo, setFilterTipo] = useState<"todos" | TipoRecursoBiblioteca>("todos");
   const [filterEstado, setFilterEstado] = useState<"todos" | "devuelto" | "en_uso" | "observado">("todos");
   const [filterGrado, setFilterGrado] = useState<string>("todos");
+
+  // Filters for Tab 5 (Plan Lector 2026 en Stock)
+  const [planLectorSearch, setPlanLectorSearch] = useState("");
+  const [planLectorGradoFilter, setPlanLectorGradoFilter] = useState("todos");
+
+  // All books from inventory stock marked as Plan Lector 2026
+  const planLectorStockBooks = useMemo(() => {
+    return (librosStock || []).filter((l) => l.esPlanLector === true || l.categoria === "Plan Lector Institucional");
+  }, [librosStock]);
+
+  // Plan Lector books filtered by grado and search term
+  const filteredPlanLectorStock = useMemo(() => {
+    return planLectorStockBooks.filter((libro) => {
+      // Grado filter
+      if (planLectorGradoFilter !== "todos") {
+        const cleanF = planLectorGradoFilter.replace("°", "").trim();
+        const gSug = (libro.gradoSugerido || "").trim();
+        const matchesGrado =
+          gSug === planLectorGradoFilter ||
+          gSug.replace("°", "").trim() === cleanF ||
+          gSug.toLowerCase().includes("todos");
+        if (!matchesGrado) return false;
+      }
+      // Search filter
+      if (planLectorSearch.trim()) {
+        const term = planLectorSearch.toLowerCase().trim();
+        const matchTitle = libro.titulo.toLowerCase().includes(term);
+        const matchAuthor = libro.autor.toLowerCase().includes(term);
+        const matchCode = libro.codigo.toLowerCase().includes(term);
+        if (!matchTitle && !matchAuthor && !matchCode) return false;
+      }
+      return true;
+    });
+  }, [planLectorStockBooks, planLectorGradoFilter, planLectorSearch]);
 
   // Quick action status update
   const handleQuickReturn = async (reg: RegistroBiblioteca) => {
@@ -1147,93 +1181,207 @@ export default function BibliotecaModule({
       )}
 
       {/* ========================================================================= */}
-      {/* VISTA PESTAÑA 5: PLAN LECTOR INSTITUCIONAL 2026                           */}
+      {/* VISTA PESTAÑA 5: PLAN LECTOR INSTITUCIONAL 2026 EN STOCK                 */}
       {/* ========================================================================= */}
       {activeTab === "plan_lector" && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-4">
             <div>
-              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-emerald-600" />
-                Catálogo de Obras Recomendadas - Plan Lector Institucional 2026
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Acervo de libros físicos y literatura escolar recomendada para cada grado de educación primaria.
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-2xs">
+                  <BookmarkCheck className="w-5 h-5" />
+                </span>
+                <h3 className="text-base font-black text-slate-900">
+                  Obras del Plan Lector 2026 en Stock
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Catálogo de libros físicos registrados en el inventario que han sido marcados como parte del Plan Lector Institucional 2026.
               </p>
             </div>
-            <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-              MINEDU & Literatura Peruana
-            </span>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1.5">
+                <Library className="w-3.5 h-3.5 text-emerald-600" />
+                <span>{planLectorStockBooks.length} obras registradas</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveTab("libros_stock")}
+                className="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Gestionar Stock</span>
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {OBRAS_PLAN_LECTOR_RECOMENDADAS.map((obra) => (
-              <div
-                key={obra.titulo}
-                className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-emerald-300 transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                      {obra.gradoRecomendado} Primaria
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-500">
-                      {obra.categoria}
-                    </span>
-                  </div>
-
-                  <h4 className="text-sm font-black text-slate-900 mt-2">
-                    {obra.titulo}
-                  </h4>
-                  <p className="text-xs text-slate-600 mt-0.5">
-                    Autor: <strong>{obra.autor}</strong>
-                  </p>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 font-mono">
-                    Disponible en biblioteca
-                  </span>
+          {/* Filters Bar: Search & Grado Tabs */}
+          <div className="space-y-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
+              {/* Search Bar */}
+              <div className="relative flex-1 w-full">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={planLectorSearch}
+                  onChange={(e) => setPlanLectorSearch(e.target.value)}
+                  placeholder="Buscar obra por título, autor o código de inventario..."
+                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                />
+                {planLectorSearch && (
                   <button
                     type="button"
-                    onClick={() => {
-                      setActiveTab("docentes");
-                      setEditingRegistro({
-                        id: `bib-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-                        docenteDni: "",
-                        docenteNombre: "",
-                        fecha: new Date().toISOString().split("T")[0],
-                        horarioId: "1-2",
-                        horarioTexto: "1° y 2° Hora Pedagógica (08:00 - 09:30)",
-                        grado: obra.gradoRecomendado,
-                        seccion: "A",
-                        estudiantesAsistentes: 30,
-                        area: "Plan Lector / Comunicación",
-                        actividadProposito: `Plan Lector: Lectura comentada de ${obra.titulo}`,
-                        tipoRecurso: "libro",
-                        librosDetalle: {
-                          titulos: `${obra.titulo} - ${obra.autor}`,
-                          cantidad: 30,
-                          categoria: obra.categoria
-                        },
-                        obraPlanLector: obra.titulo,
-                        modalidad: "aula",
-                        estadoDevolucion: "en_uso",
-                        observaciones: "Entrega de colección oficial Plan Lector.",
-                        createdAt: new Date().toISOString()
-                      });
-                      setShowForm(true);
-                      window.scrollTo({ top: 0, behavior: "smooth" });
-                    }}
-                    className="text-xs font-bold text-emerald-700 hover:text-emerald-900 flex items-center gap-1 cursor-pointer"
+                    onClick={() => setPlanLectorSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold"
                   >
-                    <span>Prestar Obra</span>
-                    <ExternalLink className="w-3 h-3" />
+                    ×
                   </button>
-                </div>
+                )}
               </div>
-            ))}
+
+              {/* Reset filter button */}
+              {(planLectorGradoFilter !== "todos" || planLectorSearch) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlanLectorGradoFilter("todos");
+                    setPlanLectorSearch("");
+                  }}
+                  className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-slate-900 text-xs font-bold transition-colors cursor-pointer shrink-0"
+                >
+                  Limpiar Filtros
+                </button>
+              )}
+            </div>
+
+            {/* Grado Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-none">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mr-1 shrink-0 flex items-center gap-1">
+                <Filter className="w-3 h-3 text-slate-400" />
+                Filtrar por Grado:
+              </span>
+
+              {[
+                { id: "todos", label: "Todos los Grados", count: planLectorStockBooks.length },
+                { id: "1°", label: "1° Primaria", count: planLectorStockBooks.filter((l) => l.gradoSugerido?.includes("1°") || l.gradoSugerido?.toLowerCase().includes("todos")).length },
+                { id: "2°", label: "2° Primaria", count: planLectorStockBooks.filter((l) => l.gradoSugerido?.includes("2°") || l.gradoSugerido?.toLowerCase().includes("todos")).length },
+                { id: "3°", label: "3° Primaria", count: planLectorStockBooks.filter((l) => l.gradoSugerido?.includes("3°") || l.gradoSugerido?.toLowerCase().includes("todos")).length },
+                { id: "4°", label: "4° Primaria", count: planLectorStockBooks.filter((l) => l.gradoSugerido?.includes("4°") || l.gradoSugerido?.toLowerCase().includes("todos")).length },
+                { id: "5°", label: "5° Primaria", count: planLectorStockBooks.filter((l) => l.gradoSugerido?.includes("5°") || l.gradoSugerido?.toLowerCase().includes("todos")).length },
+                { id: "6°", label: "6° Primaria", count: planLectorStockBooks.filter((l) => l.gradoSugerido?.includes("6°") || l.gradoSugerido?.toLowerCase().includes("todos")).length }
+              ].map((pill) => {
+                const isActive = planLectorGradoFilter === pill.id;
+                return (
+                  <button
+                    key={pill.id}
+                    type="button"
+                    onClick={() => setPlanLectorGradoFilter(pill.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                      isActive
+                        ? "bg-emerald-600 text-white shadow-xs"
+                        : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                    }`}
+                  >
+                    <span>{pill.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                        isActive ? "bg-emerald-800 text-emerald-100" : "bg-slate-100 text-slate-500"
+                      }`}
+                    >
+                      {pill.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {/* Books Grid */}
+          {filteredPlanLectorStock.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredPlanLectorStock.map((obra) => (
+                <div
+                  key={obra.id}
+                  className="p-4 rounded-2xl border border-slate-200 bg-white hover:border-emerald-300 hover:shadow-sm transition-all flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                        {obra.gradoSugerido}
+                      </span>
+                      <span className="text-[10px] font-mono text-slate-400">
+                        [{obra.codigo}]
+                      </span>
+                    </div>
+
+                    <h4 className="text-sm font-black text-slate-900 mt-2.5 leading-snug group-hover:text-emerald-700 transition-colors">
+                      {obra.titulo}
+                    </h4>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      Autor: <strong className="text-slate-800">{obra.autor}</strong>
+                    </p>
+
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-slate-400" />
+                        <span className="truncate max-w-[130px]">{obra.ubicacion}</span>
+                      </span>
+                      <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                        {obra.cantidadDisponible} de {obra.cantidadTotal} disp.
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[10px] text-slate-400">
+                      {obra.categoria}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleLoanFromStock(obra)}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="Prestar esta obra a un docente"
+                    >
+                      <span>Prestar Obra</span>
+                      <ExternalLink className="w-3.5 h-3.5 text-emerald-600" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 rounded-2xl border border-slate-200 bg-slate-50 text-center space-y-3">
+              <BookOpen className="w-10 h-10 text-slate-300 mx-auto" />
+              <h4 className="text-sm font-bold text-slate-800">
+                No se encontraron obras del Plan Lector para el filtro seleccionado
+              </h4>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                {planLectorStockBooks.length === 0
+                  ? "Actualmente no hay libros marcados como parte del Plan Lector 2026. Puede ir a la pestaña '2. Libros en Stock' para registrar o marcar libros existentes."
+                  : `No hay libros del Plan Lector 2026 asignados a ${planLectorGradoFilter}. Puede cambiar el filtro de grado o registrar nuevos ejemplares.`}
+              </p>
+              <div className="flex items-center justify-center gap-3 pt-2">
+                {planLectorGradoFilter !== "todos" && (
+                  <button
+                    type="button"
+                    onClick={() => setPlanLectorGradoFilter("todos")}
+                    className="px-3.5 py-1.5 rounded-xl bg-white border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 cursor-pointer"
+                  >
+                    Ver todos los grados ({planLectorStockBooks.length})
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("libros_stock")}
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 cursor-pointer"
+                >
+                  Ir a Libros en Stock
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

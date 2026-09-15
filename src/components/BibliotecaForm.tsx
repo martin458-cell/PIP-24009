@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Docente,
   RegistroBiblioteca,
@@ -9,7 +9,6 @@ import {
   HORARIOS_BIBLIOTECA,
   CATEGORIAS_LIBROS_BIBLIOTECA,
   APLICATIVOS_TABLETAS_LIST,
-  OBRAS_PLAN_LECTOR_RECOMENDADAS,
   GRADOS_LIST,
   SECCIONES_LIST,
   AREAS_AIP_LIST
@@ -29,7 +28,12 @@ import {
   BookmarkCheck,
   ShieldAlert,
   ArrowRight,
-  School
+  School,
+  AlertCircle,
+  Filter,
+  Check,
+  Library,
+  RotateCcw
 } from "lucide-react";
 
 interface BibliotecaFormProps {
@@ -217,17 +221,49 @@ export default function BibliotecaForm({
     setErrors((prev) => ({ ...prev, docente: "" }));
   };
 
-  const handlePickPlanLector = (obra: (typeof OBRAS_PLAN_LECTOR_RECOMENDADAS)[0]) => {
-    setObraPlanLector(obra.titulo);
-    setLibroTitulos(`${obra.titulo} - ${obra.autor}`);
-    setActividadProposito(`Lectura y análisis de la obra '${obra.titulo}' de ${obra.autor}.`);
-    if (obra.gradoRecomendado && GRADOS_LIST.includes(obra.gradoRecomendado)) {
-      setGrado(obra.gradoRecomendado);
+  // Filter all books from inventory stock that were selected as Plan Lector 2026
+  const planLectorBooksAll = useMemo(() => {
+    return (librosStock || []).filter((l) => l.esPlanLector === true || l.categoria === "Plan Lector Institucional");
+  }, [librosStock]);
+
+  // Toggle to filter strictly by the teacher's current grado or see all Plan Lector books
+  const [filterStrictGrado, setFilterStrictGrado] = useState(true);
+
+  // Plan Lector books filtered by the selected grado
+  const planLectorBooksForGrado = useMemo(() => {
+    if (!grado || !filterStrictGrado) return planLectorBooksAll;
+    const cleanCurrentGrado = grado.replace("°", "").trim();
+    return planLectorBooksAll.filter((l) => {
+      const g = (l.gradoSugerido || "").trim();
+      if (g.toLowerCase().includes("todos") || g === "Todos los grados") return true;
+      if (g === grado) return true;
+      if (g.replace("°", "").trim() === cleanCurrentGrado) return true;
+      return false;
+    });
+  }, [planLectorBooksAll, grado, filterStrictGrado]);
+
+  // When teacher clicks a Plan Lector book from the filtered stock
+  const handleSelectPlanLectorFromStock = (libro: LibroStock) => {
+    setObraPlanLector(libro.titulo);
+    setLibroTitulos(`${libro.titulo} - ${libro.autor}`);
+    setLibroCodigo(libro.codigo);
+    setLibroCategoria(libro.categoria || "Plan Lector Institucional");
+    setArea("Plan Lector & Comunicación");
+    setActividadProposito(
+      `Lectura guiada, comprensión lectora y análisis reflexivo de la obra '${libro.titulo}' (${libro.autor}) correspondiente al Plan Lector 2026 de ${grado}.`
+    );
+    if (libro.gradoSugerido && GRADOS_LIST.includes(libro.gradoSugerido)) {
+      setGrado(libro.gradoSugerido);
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Submission state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError("");
     const newErrors: { [key: string]: string } = {};
 
     if (isManualDocente) {
@@ -286,50 +322,65 @@ export default function BibliotecaForm({
       hFin = horaFinCustom;
     }
 
+    // Clean safe ID with guaranteed minimum length
+    const recordId =
+      initialData && initialData.id && initialData.id.trim()
+        ? initialData.id
+        : `bib-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+
     const newRegistro: RegistroBiblioteca = {
-      id: initialData ? initialData.id : `bib-${Date.now()}`,
-      docenteDni: finalDni,
-      docenteNombre: finalDocenteNombre,
-      fecha,
-      horarioId,
-      horarioTexto,
-      horaInicio: hInicio,
-      horaFin: hFin,
-      grado,
-      seccion,
+      id: recordId,
+      docenteDni: finalDni || "99999999",
+      docenteNombre: finalDocenteNombre || "Docente Solicitante",
+      fecha: fecha || new Date().toISOString().split("T")[0],
+      horarioId: horarioId || "1-2",
+      horarioTexto: horarioTexto || "1° y 2° Hora Pedagógica (08:00 - 09:30)",
+      horaInicio: hInicio || "08:00",
+      horaFin: hFin || "09:30",
+      grado: grado || "1°",
+      seccion: seccion || "A",
       estudiantesAsistentes: Number(estudiantesAsistentes) || 0,
-      area,
+      area: area.trim() || "Plan Lector & Comunicación",
       actividadProposito: actividadProposito.trim() || "Uso pedagógico de biblioteca / tabletas",
       tipoRecurso,
-      librosDetalle:
-        tipoRecurso === "libro" || tipoRecurso === "ambos"
-          ? {
-              titulos: libroTitulos.trim(),
-              cantidad: Number(libroCantidad) || 1,
-              categoria: libroCategoria,
-              codigoLibro: libroCodigo.trim()
-            }
-          : undefined,
-      tabletasDetalle:
-        tipoRecurso === "tableta" || tipoRecurso === "ambos"
-          ? {
-              cantidad: Number(tabletaCantidad) || 1,
-              loteMaletin: tabletaLote.trim(),
-              aplicativoRecurso: tabletaApp,
-              accesorios: tabletaAccesorios.trim()
-            }
-          : undefined,
-      modalidad,
-      estadoDevolucion,
-      fechaHoraDevolucion: estadoDevolucion === "devuelto" ? (fechaHoraDevolucion || hFin) : "",
-      condicionDevolucion: condicionDevolucion.trim(),
+      modalidad: modalidad || "sala",
+      estadoDevolucion: estadoDevolucion || "devuelto",
+      fechaHoraDevolucion: estadoDevolucion === "devuelto" ? (fechaHoraDevolucion || hFin || "09:30") : "",
+      condicionDevolucion: condicionDevolucion.trim() || "Libros/tabletas completos y en orden",
       obraPlanLector: obraPlanLector.trim(),
-      responsableEntrega: responsableEntrega.trim(),
+      responsableEntrega: responsableEntrega.trim() || "Prof. Martin Cahuana (PIP / Biblioteca)",
       observaciones: observaciones.trim(),
-      createdAt: initialData ? initialData.createdAt : new Date().toISOString()
+      createdAt: initialData && initialData.createdAt ? initialData.createdAt : new Date().toISOString()
     };
 
-    onSubmit(newRegistro);
+    // Attach librosDetalle ONLY when applicable (never leave undefined property)
+    if (tipoRecurso === "libro" || tipoRecurso === "ambos") {
+      newRegistro.librosDetalle = {
+        titulos: libroTitulos.trim(),
+        cantidad: Number(libroCantidad) || 1,
+        categoria: libroCategoria || CATEGORIAS_LIBROS_BIBLIOTECA[0],
+        codigoLibro: libroCodigo.trim()
+      };
+    }
+
+    // Attach tabletasDetalle ONLY when applicable (never leave undefined property)
+    if (tipoRecurso === "tableta" || tipoRecurso === "ambos") {
+      newRegistro.tabletasDetalle = {
+        cantidad: Number(tabletaCantidad) || 1,
+        loteMaletin: tabletaLote.trim() || "Maletín N° 01",
+        aplicativoRecurso: tabletaApp || APLICATIVOS_TABLETAS_LIST[0],
+        accesorios: tabletaAccesorios.trim()
+      };
+    }
+
+    try {
+      setIsSubmitting(true);
+      await onSubmit(newRegistro);
+    } catch (err) {
+      console.error("Error al registrar atención de biblioteca:", err);
+      setSubmitError(`Error al guardar en la base de datos: ${err instanceof Error ? err.message : String(err)}`);
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -786,17 +837,155 @@ export default function BibliotecaForm({
                 </span>
               </div>
 
-              {/* Selector directo del Inventario en Stock (Base de Datos) */}
+              {/* SECCIÓN ESPECIAL: OBRAS DEL PLAN LECTOR 2026 EN STOCK FILTRADAS SEGÚN GRADO */}
+              <div className="bg-white rounded-2xl border-2 border-emerald-300/80 p-4 shadow-2xs space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-emerald-100 pb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="p-1 rounded-md bg-emerald-600 text-white">
+                        <BookmarkCheck className="w-4 h-4" />
+                      </span>
+                      <h4 className="text-xs font-black text-emerald-950 uppercase tracking-wide flex items-center gap-1.5">
+                        <span>Obras del Plan Lector Institucional 2026</span>
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                          {grado} de Primaria
+                        </span>
+                      </h4>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Libros registrados en el inventario de stock marcados como parte del Plan Lector 2026.
+                    </p>
+                  </div>
+
+                  {/* Toggle filter by grado or show all */}
+                  <div className="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setFilterStrictGrado(true)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        filterStrictGrado
+                          ? "bg-white text-emerald-800 shadow-2xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Solo {grado} ({planLectorBooksForGrado.length})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFilterStrictGrado(false)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        !filterStrictGrado
+                          ? "bg-white text-emerald-800 shadow-2xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                    >
+                      Todos los Grados ({planLectorBooksAll.length})
+                    </button>
+                  </div>
+                </div>
+
+                {/* Plan Lector Books Grid */}
+                {planLectorBooksForGrado.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                    {planLectorBooksForGrado.map((libro) => {
+                      const isSelected = obraPlanLector === libro.titulo || libroTitulos.includes(libro.titulo);
+
+                      return (
+                        <div
+                          key={libro.id}
+                          onClick={() => handleSelectPlanLectorFromStock(libro)}
+                          className={`p-3 rounded-xl border transition-all cursor-pointer relative flex flex-col justify-between ${
+                            isSelected
+                              ? "bg-emerald-50/90 border-emerald-500 shadow-xs ring-2 ring-emerald-400/30"
+                              : "bg-slate-50/70 border-slate-200 hover:bg-white hover:border-emerald-300 hover:shadow-2xs"
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-1 mb-1">
+                              <span className="text-[10px] font-mono font-black text-emerald-800 bg-emerald-100/80 px-1.5 py-0.5 rounded">
+                                {libro.gradoSugerido}
+                              </span>
+                              <span className="text-[10px] font-bold text-slate-500">
+                                {libro.cantidadDisponible} disp.
+                              </span>
+                            </div>
+                            <p className="text-xs font-black text-slate-900 line-clamp-1 leading-snug">
+                              {libro.titulo}
+                            </p>
+                            <p className="text-[11px] text-slate-600 truncate mt-0.5">
+                              {libro.autor}
+                            </p>
+                          </div>
+
+                          <div className="mt-2 pt-2 border-t border-slate-200/70 flex items-center justify-between text-[10px]">
+                            <span className="font-mono text-slate-400">
+                              [{libro.codigo}]
+                            </span>
+                            {isSelected ? (
+                              <span className="font-bold text-emerald-700 flex items-center gap-1">
+                                <Check className="w-3 h-3 text-emerald-600 stroke-[3]" />
+                                Seleccionado
+                              </span>
+                            ) : (
+                              <span className="text-emerald-700 font-bold hover:underline">
+                                Seleccionar
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200 text-center space-y-2">
+                    <AlertCircle className="w-5 h-5 text-amber-600 mx-auto" />
+                    <p className="text-xs font-bold text-amber-900">
+                      No hay libros en stock registrados para el Plan Lector 2026 de {grado}
+                    </p>
+                    <p className="text-[11px] text-amber-700 max-w-md mx-auto">
+                      En la pestaña &quot;2. Libros en Stock&quot; puede registrar nuevas obras o editar las existentes activando la casilla &quot;Marcar como parte del Plan Lector 2026&quot;.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setFilterStrictGrado(false)}
+                      className="px-3 py-1 rounded-lg bg-white border border-amber-300 text-xs font-bold text-amber-900 hover:bg-amber-100 transition-colors cursor-pointer"
+                    >
+                      Ver obras del Plan Lector de otros grados ({planLectorBooksAll.length})
+                    </button>
+                  </div>
+                )}
+
+                {/* Obra seleccionada feedback */}
+                {obraPlanLector && (
+                  <div className="p-2.5 rounded-xl bg-emerald-100/60 border border-emerald-300 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-emerald-700 shrink-0" />
+                      <span>
+                        Obra activa del Plan Lector: <strong className="text-emerald-950 font-black">{obraPlanLector}</strong>
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setObraPlanLector("");
+                        setLibroCodigo("");
+                      }}
+                      className="text-[11px] font-bold text-slate-600 hover:text-red-700 cursor-pointer"
+                    >
+                      Quitar
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Selector directo de cualquier libro del Inventario General en Stock */}
               {librosStock && librosStock.length > 0 && (
-                <div className="bg-white/80 p-3 rounded-xl border border-emerald-300 shadow-2xs space-y-2">
+                <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-black uppercase text-emerald-950 flex items-center gap-1.5">
-                      <BookOpen className="w-3.5 h-3.5 text-emerald-700" />
-                      <span>Seleccionar del Inventario en Stock (Base de Datos):</span>
+                    <label className="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                      <Library className="w-3.5 h-3.5 text-slate-500" />
+                      <span>O seleccionar cualquier otro libro general del stock ({librosStock.length} títulos disponibles):</span>
                     </label>
-                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded-full">
-                      {librosStock.length} libros en catálogo
-                    </span>
                   </div>
                   <select
                     onChange={(e) => {
@@ -811,42 +1000,19 @@ export default function BibliotecaForm({
                       }
                     }}
                     defaultValue=""
-                    className="w-full px-3 py-2 rounded-xl border border-emerald-300 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                   >
                     <option value="" disabled>
-                      -- 📖 Seleccionar un libro del stock para autocompletar --
+                      -- 📖 Seleccionar del catálogo completo de stock --
                     </option>
                     {librosStock.map((b) => (
                       <option key={b.id} value={b.id}>
-                        [{b.codigo}] {b.titulo} - {b.autor} ({b.cantidadDisponible} disp. en {b.ubicacion})
+                        [{b.codigo}] {b.titulo} - {b.autor} ({b.cantidadDisponible} disp. en {b.ubicacion}) {b.esPlanLector ? "★ Plan Lector 2026" : ""}
                       </option>
                     ))}
                   </select>
                 </div>
               )}
-
-              {/* Quick suggestion chips from Plan Lector */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                    Sugerencias rápidas del Plan Lector (1 Clic para autocompletar):
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {OBRAS_PLAN_LECTOR_RECOMENDADAS.slice(0, 6).map((obra) => (
-                    <button
-                      key={obra.titulo}
-                      type="button"
-                      onClick={() => handlePickPlanLector(obra)}
-                      className="px-2 py-1 rounded-lg bg-white hover:bg-emerald-100 border border-emerald-200 text-[11px] font-semibold text-emerald-900 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
-                    >
-                      <BookmarkCheck className="w-3 h-3 text-emerald-600" />
-                      <span>{obra.titulo} ({obra.gradoRecomendado})</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3 pt-2">
                 <div className="md:col-span-6">
@@ -1138,22 +1304,44 @@ export default function BibliotecaForm({
           </div>
         </div>
 
+        {/* Error notification if submit fails */}
+        {submitError && (
+          <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            <div className="flex-1">
+              <p className="font-bold">Error al registrar la atención:</p>
+              <p className="text-[11px] text-red-700">{submitError}</p>
+            </div>
+          </div>
+        )}
+
         {/* Form Actions Footer */}
         <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            disabled={isSubmitting}
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50"
           >
             Cancelar
           </button>
 
           <button
             type="submit"
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black tracking-wider uppercase transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+            disabled={isSubmitting}
+            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black tracking-wider uppercase transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Save className="w-4 h-4" />
-            <span>{isEditing ? "Actualizar Registro" : "Guardar Registro en Biblioteca"}</span>
+            {isSubmitting ? (
+              <>
+                <RotateCcw className="w-4 h-4 animate-spin" />
+                <span>Guardando en Base de Datos...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                <span>{isEditing ? "Actualizar Registro" : "Guardar Registro en Biblioteca"}</span>
+              </>
+            )}
           </button>
         </div>
 
