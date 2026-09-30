@@ -629,7 +629,7 @@ export async function generateWordDocument(
             spacing: { after: 60 },
             children: [
               new TextRun({
-                text: "“AÑO DEL BICENTENARIO, DE LA CONSOLIDACIÓN DE NUESTRA INDEPENDENCIA, Y DE LA CONMEMORACIÓN DE LAS HEROICAS BATALLAS DE JUNÍN Y AYACUCHO”",
+                text: "“AÑO DE LA ESPERANZA Y EL FORTALECIMIENTO DE LA DEMOCRACIA”",
                 italics: true,
                 bold: true,
                 size: 16,

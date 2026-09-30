@@ -2154,7 +2154,7 @@ export default function MonthlyReportModule({
               </div>
               <div className="flex-1 text-center space-y-1">
                 <p className="text-[10px] uppercase italic font-serif text-slate-500 tracking-wider">
-                  “Año del Bicentenario, de la consolidación de nuestra Independencia, y de la conmemoración de las heroicas batallas de Junín y Ayacucho”
+                  “Año de la Esperanza y el Fortalecimiento de la Democracia”
                 </p>
                 <h1 className="text-base sm:text-lg font-black text-[#0B1E36] tracking-tight">
                   INSTITUCIÓN EDUCATIVA PRIMARIA DE MENORES N° 24009 “TÚPAC AMARU II”
