@@ -131,10 +131,16 @@ export default function SpecialDatesCalendar({
   registrosAip,
   docentes
 }: SpecialDatesCalendarProps) {
-  // Current view year & month state
-  const [currentYear, setCurrentYear] = useState<number>(2026);
-  const [currentMonth, setCurrentMonth] = useState<number>(4); // Default to Mayo (index 4)
+  // Current view year & month state - default to current month and year
+  const [currentYear, setCurrentYear] = useState<number>(() => new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth());
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  // String format of today for highlighting (YYYY-MM-DD)
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
 
   // Filters state
   const [searchTerm, setSearchTerm] = useState("");
@@ -693,10 +699,26 @@ export default function SpecialDatesCalendar({
               onChange={(e) => setCurrentYear(parseInt(e.target.value, 10))}
               className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-blue-500 cursor-pointer"
             >
+              <option value={2024}>2024</option>
               <option value={2025}>2025</option>
               <option value={2026}>2026</option>
               <option value={2027}>2027</option>
+              <option value={2028}>2028</option>
             </select>
+
+            <button
+              type="button"
+              onClick={() => {
+                const now = new Date();
+                setCurrentYear(now.getFullYear());
+                setCurrentMonth(now.getMonth());
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+              title="Ir inmediatamente al mes actual"
+            >
+              <CalendarIcon className="w-3.5 h-3.5 text-blue-600" />
+              <span>Mes Actual</span>
+            </button>
           </div>
         </div>
 
@@ -811,6 +833,7 @@ export default function SpecialDatesCalendar({
               {calendarDays.map((item, idx) => {
                 const hasSpecialDates = item.fechas.length > 0;
                 const hasAipSessions = item.sesionesAip.length > 0;
+                const isToday = item.dateStr === todayStr;
 
                 return (
                   <div
@@ -827,6 +850,8 @@ export default function SpecialDatesCalendar({
                     className={`min-h-[105px] p-2 transition-all cursor-pointer relative group flex flex-col justify-between ${
                       !item.isCurrentMonth
                         ? "bg-slate-50/50 text-slate-300 opacity-60 pointer-events-none"
+                        : isToday
+                        ? "bg-blue-50/70 ring-2 ring-blue-500 ring-inset shadow-xs"
                         : item.isWeekend
                         ? "bg-slate-50/70 hover:bg-amber-50/40"
                         : hasSpecialDates
@@ -836,17 +861,26 @@ export default function SpecialDatesCalendar({
                   >
                     {/* Day number and quick add pill */}
                     <div className="flex items-center justify-between">
-                      <span
-                        className={`text-xs font-black font-mono rounded-lg w-6 h-6 flex items-center justify-center ${
-                          hasSpecialDates
-                            ? "bg-amber-500 text-white shadow-2xs"
-                            : item.isCurrentMonth && !item.isWeekend
-                            ? "text-slate-800"
-                            : "text-slate-400"
-                        }`}
-                      >
-                        {item.dayNumber}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span
+                          className={`text-xs font-black font-mono rounded-lg w-6 h-6 flex items-center justify-center ${
+                            isToday
+                              ? "bg-blue-600 text-white shadow-2xs font-bold"
+                              : hasSpecialDates
+                              ? "bg-amber-500 text-white shadow-2xs"
+                              : item.isCurrentMonth && !item.isWeekend
+                              ? "text-slate-800"
+                              : "text-slate-400"
+                          }`}
+                        >
+                          {item.dayNumber}
+                        </span>
+                        {isToday && (
+                          <span className="text-[9px] font-black text-blue-700 bg-blue-100/90 px-1.5 py-0.5 rounded-md uppercase tracking-wider font-mono">
+                            Hoy
+                          </span>
+                        )}
+                      </div>
 
                       {item.isCurrentMonth && (
                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
